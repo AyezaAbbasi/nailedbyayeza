@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin — nailedbyayeza</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css" rel="stylesheet">
+<style>
+  /* Lucide icon sizing for the admin panel */
+  #sidebar h1 svg{ width:22px; height:22px; vertical-align:-4px; margin-right:6px; stroke-width:1.8; }
+  .nav-item svg{ width:18px; height:18px; vertical-align:-3px; margin-right:8px; stroke-width:1.8; }
+  .thumb-actions svg{ width:14px; height:14px; vertical-align:middle; stroke-width:2.2; pointer-events:none; }
+  td a svg{ width:15px; height:15px; vertical-align:-3px; margin-right:4px; stroke-width:1.8; }
+</style>
+</head>
+<body>
+
+<div id="loginScreen">
+  <div class="login-box">
+    <h2>Admin Login</h2>
+    <p>Default: <b>admin</b> / <b>nailedbyayeza123</b></p>
+    <form id="loginForm">
+      <div class="form-row"><label>Username</label><input type="text" id="loginUser" required></div>
+      <div class="form-row"><label>Password</label><input type="password" id="loginPass" required></div>
+      <button class="btn" style="width:100%;" type="submit">Log In</button>
+      <div id="loginMsg" style="color:var(--danger); font-size:.85rem; margin-top:10px;"></div>
+    </form>
+  </div>
+</div>
+
+<aside id="sidebar">
+  <h1><i data-lucide="sparkles"></i> Admin Panel</h1>
+  <div class="nav-section">
+    <div class="nav-item" data-panel="dashboard"><i data-lucide="layout-dashboard"></i> Dashboard</div>
+  </div>
+  <div class="nav-section">
+    <div class="nav-item" data-toggle="products-sub"><i data-lucide="shopping-bag"></i> Products</div>
+    <div class="nav-sub" id="products-sub">
+      <div class="nav-item" data-panel="all-products">All Products</div>
+      <div class="nav-item" data-panel="add-product">Add New Product</div>
+      <div class="nav-item" data-panel="categories">Categories</div>
+      <div class="nav-item" data-panel="inventory">Inventory</div>
+    </div>
+  </div>
+  <div class="nav-section">
+    <div class="nav-item" data-panel="orders"><i data-lucide="package"></i> Orders</div>
+  </div>
+  <div class="nav-section">
+    <div class="nav-item" data-panel="custom-orders"><i data-lucide="palette"></i> Custom Orders</div>
+  </div>
+  <div class="nav-section">
+    <div class="nav-item" data-panel="customers"><i data-lucide="users"></i> Customers</div>
+  </div>
+  <div class="nav-section">
+    <div class="nav-item" data-panel="reviews"><i data-lucide="star"></i> Reviews</div>
+  </div>
+  <div class="nav-section">
+    <div class="nav-item" data-panel="messages"><i data-lucide="mail"></i> Messages <span id="msgBadge" class="badge new" style="display:none; margin-left:auto;"></span></div>
+  </div>
+  <div class="nav-section">
+    <div class="nav-item" data-panel="coupons"><i data-lucide="ticket"></i> Coupons</div>
+  </div>
+  <div class="nav-section">
+    <div class="nav-item" data-panel="delivery"><i data-lucide="truck"></i> Delivery Charges</div>
+  </div>
+  <div class="nav-section">
+    <div class="nav-item" data-toggle="homepage-sub"><i data-lucide="image"></i> Homepage</div>
+    <div class="nav-sub" id="homepage-sub">
+      <div class="nav-item" data-panel="homepage-banner">Banner</div>
+      <div class="nav-item" data-panel="homepage-featured">Featured Products</div>
+      <div class="nav-item" data-panel="homepage-promo">Promotions</div>
+    </div>
+  </div>
+  <div class="nav-section">
+    <div class="nav-item" data-panel="gallery"><i data-lucide="camera"></i> Gallery</div>
+  </div>
+  <div class="nav-section">
+    <div class="nav-item" data-panel="analytics"><i data-lucide="trending-up"></i> Sales / Analytics</div>
+  </div>
+  <div class="nav-section">
+    <div class="nav-item" data-panel="settings"><i data-lucide="settings"></i> Settings</div>
+  </div>
+  <div class="nav-section">
+    <div class="nav-item" id="logoutBtn"><i data-lucide="log-out"></i> Logout</div>
+  </div>
+</aside>
+
+<main id="mainArea">
+
+  <div class="panel" id="panel-dashboard">
+    <div class="panel-title">Dashboard</div>
+    <div class="stat-grid" id="statGrid"></div>
+    <div class="card-box">
+      <h3 style="margin-bottom:14px;">Low Stock Alerts</h3>
+      <div id="lowStockList"></div>
+    </div>
+    <div class="card-box">
+      <h3 style="margin-bottom:14px;">Top Products</h3>
+      <table><thead><tr><th>Product</th><th>Qty Sold</th><th>Revenue</th></tr></thead><tbody id="topProductsBody"></tbody></table>
+    </div>
+  </div>
+
+  <div class="panel" id="panel-all-products">
+    <div class="panel-title">All Products</div>
+    <div class="card-box"><table><thead><tr><th>Photo</th><th>Name</th><th>Category</th><th>Price</th><th>Stock</th><th>Status</th><th>Flags</th><th></th></tr></thead><tbody id="allProductsBody"></tbody></table></div>
+  </div>
+
+  <div class="panel" id="panel-add-product">
+    <div class="panel-title">Add New Nail Set</div>
+    <div class="card-box">
+      <form id="addProductForm">
+        <div class="form-row"><label>Product Name</label><input type="text" id="npName" required></div>
+        <div class="form-grid">
+          <div class="form-row"><label>Price (Rs.)</label><input type="number" id="npPrice" required></div>
+          <div class="form-row"><label>Category</label><select id="npCategory"></select></div>
+          <div class="form-row"><label>Stock Quantity</label><input type="number" id="npStock" value="5" required></div>
+        </div>
+        <div class="form-row"><label>Description</label><textarea id="npDescription" rows="3"></textarea></div>
+        <div class="form-grid">
+          <div class="form-row"><label>Nail Shape (default)</label><select id="npShape"><option>Almond</option><option>Coffin</option><option>Oval</option><option>Square</option><option>Stiletto</option></select></div>
+          <div class="form-row"><label>Nail Length (default)</label><select id="npLength"><option>Short</option><option>Medium</option><option>Long</option></select></div>
+        </div>
+        <div class="form-row"><label>Available Sizes</label>
+          <div style="display:flex; gap:14px; flex-wrap:wrap;">
+            <label><input type="checkbox" class="sizeCheck" value="XS" checked> XS</label>
+            <label><input type="checkbox" class="sizeCheck" value="S" checked> S</label>
+            <label><input type="checkbox" class="sizeCheck" value="M" checked> M</label>
+            <label><input type="checkbox" class="sizeCheck" value="L" checked> L</label>
+            <label><input type="checkbox" class="sizeCheck" value="Custom" checked> Custom</label>
+          </div>
+        </div>
+        <div class="form-row"><label>Product Images (up to 6)</label><input type="file" id="npImages" accept="image/*" multiple>
+          <div class="img-thumb-row" id="npImagesPreview"></div>
+        </div>
+        <div class="form-row" style="display:flex; gap:16px;">
+          <label><input type="checkbox" id="npNew"> New Arrival</label>
+          <label><input type="checkbox" id="npBest"> Best Seller</label>
+          <label><input type="checkbox" id="npFeatured"> Featured</label>
+        </div>
+        <div class="form-row"><label>Status</label>
+          <select id="npStatus"><option value="Available">Available</option><option value="Sold Out">Sold Out</option></select>
+        </div>
+        <button class="btn" type="submit">ADD PRODUCT</button>
+        <div id="addProductMsg" style="font-size:.85rem; margin-top:10px;"></div>
+      </form>
+    </div>
+  </div>
+
+  <div class="panel" id="panel-categories">
+    <div class="panel-title">Categories</div>
+    <div class="card-box">
+      <p style="color:var(--text-faint); font-size:.85rem; margin-bottom:14px;">Categories are created automatically from products, plus a default starter list. Assign a category to a product from its edit screen.</p>
+      <div id="categoriesList" style="display:flex; gap:10px; flex-wrap:wrap;"></div>
+    </div>
+  </div>
+
+  <div class="panel" id="panel-inventory">
+    <div class="panel-title">Inventory</div>
+    <div class="card-box"><table><thead><tr><th>Product</th><th>Stock</th><th>Status</th><th>Adjust</th></tr></thead><tbody id="inventoryBody"></tbody></table></div>
+  </div>
+
+  <div class="panel" id="panel-orders">
+    <div class="panel-title">Orders</div>
+    <div class="tabs" id="orderTabs">
+      <div class="tab-btn active" data-status="">All</div>
+      <div class="tab-btn" data-status="New">New</div>
+      <div class="tab-btn" data-status="Processing">Processing</div>
+      <div class="tab-btn" data-status="Shipped">Shipped</div>
+      <div class="tab-btn" data-status="Completed">Completed</div>
+    </div>
+    <div class="card-box"><table><thead><tr><th>#</th><th>Customer</th><th>Product(s)</th><th>Total</th><th>Status</th><th></th></tr></thead><tbody id="ordersBody"></tbody></table></div>
+  </div>
+
+  <div class="panel" id="panel-custom-orders">
+    <div class="panel-title">Custom Order Requests</div>
+    <div class="card-box"><table><thead><tr><th>#</th><th>Customer</th><th>Requested</th><th>Inspiration</th><th>Status</th><th></th></tr></thead><tbody id="customOrdersBody"></tbody></table></div>
+  </div>
+
+  <div class="panel" id="panel-customers">
+    <div class="panel-title">Customers</div>
+    <div class="card-box"><table><thead><tr><th>Name</th><th>Phone</th><th>Email</th><th>Orders</th><th>Total Spent</th></tr></thead><tbody id="customersBody"></tbody></table></div>
+  </div>
+
+  <div class="panel" id="panel-reviews">
+    <div class="panel-title">Reviews</div>
+    <div class="card-box"><table><thead><tr><th>Photo</th><th>Name</th><th>Rating</th><th>Comment</th><th></th></tr></thead><tbody id="reviewsBody"></tbody></table></div>
+  </div>
+
+  <div class="panel" id="panel-messages">
+    <div class="panel-title">Messages</div>
+    <div class="card-box"><table><thead><tr><th>Date</th><th>From</th><th>Subject</th><th>Message</th><th>Status</th><th></th></tr></thead><tbody id="messagesBody"></tbody></table></div>
+  </div>
+
+  <div class="panel" id="panel-coupons">
+    <div class="panel-title">Coupons</div>
+    <div class="card-box">
+      <form id="addCouponForm" style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap;">
+        <div class="form-row" style="margin:0;"><label>Code</label><input type="text" id="cpCode" required style="width:160px;"></div>
+        <div class="form-row" style="margin:0;"><label>Discount %</label><input type="number" id="cpDiscount" required style="width:100px;"></div>
+        <button class="btn btn-sm" type="submit">Add Coupon</button>
+      </form>
+    </div>
+    <div class="card-box"><table><thead><tr><th>Code</th><th>Discount</th><th>Active</th><th></th></tr></thead><tbody id="couponsBody"></tbody></table></div>
+  </div>
+
+  <div class="panel" id="panel-homepage-banner">
+    <div class="panel-title">Homepage — Banner</div>
+    <div class="card-box">
+      <form id="bannerForm">
+        <div class="form-row"><label>Banner Title</label><input type="text" id="bnTitle"></div>
+        <div class="form-row"><label>Banner Subtitle</label><input type="text" id="bnSubtitle"></div>
+        <div class="form-row"><label>Banner Image</label><input type="file" id="bnImage" accept="image/*"></div>
+        <button class="btn" type="submit">Save Banner</button>
+        <div id="bannerMsg" style="font-size:.85rem; margin-top:10px;"></div>
+      </form>
+    </div>
+  </div>
+
+  <div class="panel" id="panel-delivery">
+    <div class="panel-title">Delivery Charges</div>
+    <div class="card-box">
+      <form id="deliveryForm">
+        <div class="form-row"><label>Default Delivery Charge (Rs.)</label><input type="number" id="dcAmount" min="0" required></div>
+        <p style="color:var(--text-faint); font-size:.82rem; margin-bottom:18px;">Used for any city/province not listed below. Added to every order's total at checkout, on top of the nail price.</p>
+
+        <label style="display:block; font-size:.78rem; font-weight:700; text-transform:uppercase; letter-spacing:.04em; margin-bottom:8px;">Charges by Location</label>
+        <p style="color:var(--text-faint); font-size:.82rem; margin-bottom:10px;">Enter a city (e.g. Lahore) or a province (e.g. Sindh). A city match wins over a province match.</p>
+        <div id="dcRatesList"></div>
+        <button class="btn btn-sm btn-outline" type="button" onclick="addRateRow()" style="margin:6px 0 18px;">+ Add Location</button><br>
+
+        <button class="btn" type="submit">Save Delivery Charges</button>
+        <div id="deliveryMsg" style="font-size:.85rem; margin-top:10px;"></div>
+      </form>
+    </div>
+  </div>
+
+  <div class="panel" id="panel-homepage-featured">
+    <div class="panel-title">Homepage — Featured Products</div>
+    <div class="card-box">
+      <p style="color:var(--text-faint); font-size:.85rem; margin-bottom:14px;">Toggle "Featured" per product from the All Products list — featured items appear in the homepage's Featured Designs section.</p>
+      <div id="featuredList"></div>
+    </div>
+  </div>
+
+  <div class="panel" id="panel-homepage-promo">
+    <div class="panel-title">Homepage — Promotions</div>
+    <div class="card-box">
+      <form id="promoForm">
+        <div class="form-row"><label>Promotions Text</label><textarea id="promoText" rows="3" placeholder="e.g. Eid Sale — 20% off all bridal sets!"></textarea></div>
+        <button class="btn" type="submit">Save</button>
+        <div id="promoMsg" style="font-size:.85rem; margin-top:10px;"></div>
+      </form>
+    </div>
+  </div>
+
+  <div class="panel" id="panel-gallery">
+    <div class="panel-title">Gallery</div>
+    <div class="card-box">
+      <input type="file" id="galleryUpload" accept="image/*" multiple>
+      <div class="img-thumb-row" id="galleryUploadPreview"></div>
+      <button class="btn btn-sm" onclick="uploadGallery()" style="margin-left:10px;">Upload</button>
+    </div>
+    <div class="card-box"><div class="img-thumb-row" id="galleryGridAdmin" style="flex-wrap:wrap;"></div></div>
+  </div>
+
+  <div class="panel" id="panel-analytics">
+    <div class="panel-title">Sales / Analytics</div>
+    <div class="stat-grid" id="analyticsStatGrid"></div>
+    <div class="card-box">
+      <h3 style="margin-bottom:14px;">Orders by Status</h3>
+      <div id="statusBreakdown"></div>
+    </div>
+  </div>
+
+  <div class="panel" id="panel-settings">
+    <div class="panel-title">Settings</div>
+    <div class="card-box">
+      <h3 style="margin-bottom:14px;">Change Password</h3>
+      <form id="passwordForm">
+        <div class="form-row"><label>Current Password</label><input type="password" id="curPass" required></div>
+        <div class="form-row"><label>New Password</label><input type="password" id="newPass" required></div>
+        <button class="btn" type="submit">Update Password</button>
+        <div id="passwordMsg" style="font-size:.85rem; margin-top:10px;"></div>
+      </form>
+    </div>
+  </div>
+
+</main>
+
+<!-- Edit Product Modal -->
+<div class="modal-overlay" id="editModal">
+  <div class="modal-box">
+    <h3 style="margin-bottom:16px;">Edit Product</h3>
+    <form id="editForm">
+      <input type="hidden" id="editId">
+      <div class="form-row"><label>Name</label><input type="text" id="editName"></div>
+      <div class="form-grid">
+        <div class="form-row"><label>Price</label><input type="number" id="editPrice"></div>
+        <div class="form-row"><label>Stock</label><input type="number" id="editStock"></div>
+      </div>
+      <div class="form-row"><label>Category</label><select id="editCategory"></select></div>
+      <div class="form-row"><label>Status</label><select id="editStatus"><option value="Available">Available</option><option value="Sold Out">Sold Out</option></select></div>
+      <div class="form-row" style="display:flex; gap:16px;">
+        <label><input type="checkbox" id="editNew"> New Arrival</label>
+        <label><input type="checkbox" id="editBest"> Best Seller</label>
+        <label><input type="checkbox" id="editFeatured"> Featured</label>
+      </div>
+      <div class="form-row"><label>Photos</label>
+        <div class="img-thumb-row" id="editImagesRow"></div>
+        <input type="file" id="editAddImages" accept="image/*" multiple style="margin-top:10px;">
+        <div class="img-thumb-row" id="editAddImagesPreview"></div>
+      </div>
+      <div style="display:flex; gap:10px; margin-top:16px;">
+        <button class="btn" type="submit">SAVE CHANGES</button>
+        <button class="btn btn-outline" type="button" onclick="closeEditModal()">Cancel</button>
+      </div>
+      <div id="editMsg" style="font-size:.85rem; margin-top:10px;"></div>
+    </form>
+  </div>
+</div>
+
+<!-- Order Detail Modal -->
+<!-- Crop Photo Modal -->
+<div class="modal-overlay" id="cropModal">
+  <div class="modal-box" style="max-width:600px;">
+    <h3 style="margin-bottom:14px;">Crop Photo</h3>
+    <div style="max-height:420px; overflow:hidden; background:#000; border-radius:8px;">
+      <img id="cropImage" style="max-width:100%; display:block;">
+    </div>
+    <p style="font-size:.78rem; color:var(--text-faint); margin-top:10px;">Drag the corners to adjust the crop area, then click "Save Crop".</p>
+    <div style="display:flex; gap:10px; margin-top:16px;">
+      <button class="btn" type="button" onclick="confirmCrop()">Save Crop</button>
+      <button class="btn btn-outline" type="button" onclick="skipCrop()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Message / Reply Modal -->
+<div class="modal-overlay" id="msgModal">
+  <div class="modal-box" id="msgModalContent"></div>
+</div>
+
+<div class="modal-overlay" id="orderModal">
+  <div class="modal-box" id="orderModalContent"></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script>
+<script src="https://unpkg.com/lucide@0.383.0/dist/umd/lucide.min.js"></script>
+<script>
+const API = '/api';
+// Draws any <i data-lucide="..."> icons. Safe to call many times; does nothing if Lucide failed to load.
+function refreshIcons(){ if (window.lucide) lucide.createIcons(); }
+// Images now live on Cloudinary (full https:// URL). Old products saved before the
+// switch still have a local "uploads/..." path, so this keeps both working.
+function imgUrl(p){ if (!p) return p; return /^https?:\/\//i.test(p) ? p : '/' + p; }
+async function apiGet(p){ const r = await fetch(API+p); if(!r.ok) throw new Error((await r.json().catch(()=>({}))).error||'Failed'); return r.json(); }
+async function apiSend(p, method, body, isForm){
+  const opts = { method };
+  if (isForm){ opts.body = body; } else { opts.headers={'Content-Type':'application/json'}; opts.body = JSON.stringify(body); }
+  const r = await fetch(API+p, opts);
+  const d = await r.json().catch(()=>({}));
+  if (!r.ok) throw new Error(d.error||'Failed');
+  return d;
+}
+
+// ---------- Photo cropping (Cropper.js) ----------
+// Selecting files just adds them as thumbnails immediately (no forced modal).
+// Each thumbnail has an optional crop button to crop that one photo on demand.
+let cropperInstance = null;
+let cropTargetArray = null;
+let cropTargetIndex = null;
+
+var pendingNewProductImages = [];
+var pendingEditProductImages = [];
+var pendingGalleryImages = [];
+
+function addFilesToPending(arrName, fileList, previewId){
+  window[arrName] = window[arrName].concat(Array.from(fileList));
+  renderPendingThumbs(previewId, window[arrName], arrName);
+}
+function removePending(arrName, index, previewId){
+  window[arrName].splice(index, 1);
+  renderPendingThumbs(previewId, window[arrName], arrName);
+}
+function renderPendingThumbs(containerId, files, arrName){
+  const box = document.getElementById(containerId);
+  if (!box) return;
+  box.innerHTML = files.map((f, i) => `
+    <div class="img-thumb">
+      <img src="${URL.createObjectURL(f)}">
+      <div class="thumb-actions">
+        <span title="Crop" onclick="openCropperFor('${arrName}', ${i})"><i data-lucide="scissors"></i></span>
+        <span title="Remove" onclick="removePending('${arrName}', ${i}, '${containerId}')"><i data-lucide="x"></i></span>
+      </div>
+    </div>`).join('');
+  refreshIcons();
+}
+
+function openCropperFor(arrName, index){
+  cropTargetArray = arrName;
+  cropTargetIndex = index;
+  const file = window[arrName][index];
+  const imgEl = document.getElementById('cropImage');
+  if (cropperInstance) { cropperInstance.destroy(); cropperInstance = null; }
+  imgEl.onload = () => {
+    cropperInstance = new Cropper(imgEl, { aspectRatio: NaN, viewMode: 1, autoCropArea: 1 });
+  };
+  imgEl.src = URL.createObjectURL(file);
+  cropModal.classList.add('open');
+}
+function confirmCrop(){
+  cropperInstance.getCroppedCanvas().toBlob((blob) => {
+    window[cropTargetArray][cropTargetIndex] = blob;
+    cropModal.classList.remove('open');
+    cropperInstance.destroy(); cropperInstance = null;
+    const previewIds = { pendingNewProductImages:'npImagesPreview', pendingEditProductImages:'editAddImagesPreview', pendingGalleryImages:'galleryUploadPreview' };
+    renderPendingThumbs(previewIds[cropTargetArray], window[cropTargetArray], cropTargetArray);
+  }, 'image/jpeg', 0.92);
+}
+function skipCrop(){
+  cropModal.classList.remove('open');
+  if (cropperInstance){ cropperInstance.destroy(); cropperInstance = null; }
+}
+
+document.getElementById('npImages').addEventListener('change', (e) => {
+  addFilesToPending('pendingNewProductImages', e.target.files, 'npImagesPreview');
+  e.target.value = '';
+});
+document.getElementById('editAddImages').addEventListener('change', (e) => {
+  addFilesToPending('pendingEditProductImages', e.target.files, 'editAddImagesPreview');
+  e.target.value = '';
+});
+document.getElementById('galleryUpload').addEventListener('change', (e) => {
+  addFilesToPending('pendingGalleryImages', e.target.files, 'galleryUploadPreview');
+  e.target.value = '';
+});
+
+// ---------- Auth ----------
+async function checkSession(){
+  const d = await apiGet('/auth');
+  if (d.loggedIn){ showDashboard(); } else { showLogin(); }
+}
+function showLogin(){ loginScreen.style.display='flex'; sidebar.style.display='none'; mainArea.style.display='none'; }
+function showDashboard(){ loginScreen.style.display='none'; sidebar.style.display='block'; mainArea.style.display='block'; switchPanel('dashboard'); loadAllData(); }
+
+loginForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  try { await apiSend('/auth','POST',{action:'login', username:loginUser.value, password:loginPass.value}); showDashboard(); }
+  catch(err){ loginMsg.textContent = err.message; }
+});
+logoutBtn.addEventListener('click', async () => { await apiSend('/auth','POST',{action:'logout'}); showLogin(); });
+
+// ---------- Sidebar nav ----------
+document.querySelectorAll('.nav-item[data-panel]').forEach(item => {
+  item.addEventListener('click', () => switchPanel(item.dataset.panel));
+});
+document.querySelectorAll('[data-toggle]').forEach(item => {
+  item.addEventListener('click', () => {
+    const sub = document.getElementById(item.dataset.toggle);
+    sub.style.display = sub.style.display === 'block' ? 'none' : 'block';
+  });
+});
+function switchPanel(name){
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.querySelector(`.nav-item[data-panel="${name}"]`)?.classList.add('active');
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-'+name)?.classList.add('active');
+  refreshPanel(name);
+}
+function refreshPanel(name){
+  if (name==='dashboard') loadDashboard();
+  if (name==='all-products') loadAllProducts();
+  if (name==='add-product') loadCategoryOptions('npCategory');
+  if (name==='categories') loadCategoriesList();
+  if (name==='inventory') loadInventory();
+  if (name==='orders') loadOrders();
+  if (name==='custom-orders') loadCustomOrders();
+  if (name==='customers') loadCustomers();
+  if (name==='reviews') loadReviews();
+  if (name==='messages') loadMessages();
+  if (name==='coupons') loadCoupons();
+  if (name==='delivery') loadDelivery();
+  if (name==='homepage-banner') loadBanner();
+  if (name==='homepage-featured') loadFeaturedList();
+  if (name==='homepage-promo') loadPromo();
+  if (name==='gallery') loadGallery();
+  if (name==='analytics') loadAnalytics();
+}
+function loadAllData(){ loadDashboard(); updateMsgBadge(); }
+
+// ---------- Dashboard ----------
+async function loadDashboard(){
+  const d = await apiGet('/dashboard');
+  statGrid.innerHTML = `
+    <div class="stat-card"><div class="num">Rs. ${d.total_sales.toLocaleString()}</div><div class="label">Total Sales</div></div>
+    <div class="stat-card"><div class="num">${d.total_orders}</div><div class="label">Total Orders</div></div>
+    <div class="stat-card"><div class="num">${d.out_of_stock_count}</div><div class="label">Out of Stock</div></div>
+    <div class="stat-card"><div class="num">${d.pending_custom_orders}</div><div class="label">Pending Custom Requests</div></div>`;
+  lowStockList.innerHTML = d.low_stock.length ? d.low_stock.map(p=>`<div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border); font-size:.85rem;"><span>${p.name}</span><span class="badge low">${p.stock} left</span></div>`).join('') : '<p class="empty-note">No low-stock items.</p>';
+  topProductsBody.innerHTML = d.top_products.map(p=>`<tr><td>${p._id}</td><td>${p.qty}</td><td>Rs. ${p.revenue.toLocaleString()}</td></tr>`).join('') || '<tr><td colspan="3" class="empty-note">No sales yet.</td></tr>';
+}
+
+// ---------- Categories ----------
+async function loadCategoryOptions(selectId){
+  const cats = await apiGet('/categories');
+  document.getElementById(selectId).innerHTML = cats.map(c=>`<option value="${c}">${c}</option>`).join('');
+}
+async function loadCategoriesList(){
+  const cats = await apiGet('/categories');
+  categoriesList.innerHTML = cats.map(c=>`<span class="badge new">${c}</span>`).join('');
+}
+
+// ---------- Products ----------
+let allProductsCache = [];
+async function loadAllProducts(){
+  allProductsCache = await apiGet('/products');
+  allProductsBody.innerHTML = allProductsCache.map(p => {
+    const main = (p.images||[]).find(i=>i.is_main) || (p.images||[])[0];
+    const flags = [p.is_new_arrival?'New':'', p.is_best_seller?'Best':'', p.is_featured?'Featured':''].filter(Boolean).join(', ') || '—';
+    return `<tr>
+      <td>${main ? `<img src="${imgUrl(main.path)}" style="width:44px;height:44px;object-fit:cover;border-radius:6px;">` : '—'}</td>
+      <td>${p.name}</td><td>${p.category}</td><td>Rs. ${p.price.toLocaleString()}</td><td>${p.stock}</td>
+      <td><span class="badge ${p.status==='Available'?'available':'sold'}">${p.status}</span></td>
+      <td style="font-size:.75rem;">${flags}</td>
+      <td><button class="btn btn-sm btn-outline" onclick="openEditModal('${p.id}')">Edit</button> <button class="del-link" onclick="deleteProduct('${p.id}')">Delete</button></td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="8" class="empty-note">No products yet.</td></tr>';
+}
+async function deleteProduct(id){
+  if (!confirm('Delete this product permanently?')) return;
+  await apiSend(`/products/${id}`, 'DELETE');
+  loadAllProducts();
+}
+
+document.getElementById('addProductForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const msg = addProductMsg;
+  const fd = new FormData();
+  fd.append('name', npName.value); fd.append('price', npPrice.value); fd.append('category', npCategory.value);
+  fd.append('description', npDescription.value); fd.append('stock', npStock.value); fd.append('status', npStatus.value);
+  fd.append('shape_options', JSON.stringify([npShape.value]));
+  fd.append('length_options', JSON.stringify([npLength.value]));
+  fd.append('size_options', JSON.stringify(Array.from(document.querySelectorAll('.sizeCheck:checked')).map(c=>c.value)));
+  fd.append('is_new_arrival', npNew.checked); fd.append('is_best_seller', npBest.checked); fd.append('is_featured', npFeatured.checked);
+  pendingNewProductImages.forEach((f,i) => fd.append('images', f, `photo-${i+1}.jpg`));
+  try {
+    await apiSend('/products', 'POST', fd, true);
+    msg.textContent = 'Product added!'; msg.style.color='var(--success)';
+    e.target.reset();
+    pendingNewProductImages = []; npImagesPreview.innerHTML = '';
+  } catch(err){ msg.textContent = err.message; msg.style.color='var(--danger)'; }
+});
+
+// ---------- Edit Modal ----------
+let editingProduct = null;
+async function openEditModal(id){
+  editingProduct = allProductsCache.find(p=>p.id===id) || await apiGet(`/products/${id}`);
+  await loadCategoryOptions('editCategory');
+  editId.value = editingProduct.id; editName.value = editingProduct.name; editPrice.value = editingProduct.price;
+  editStock.value = editingProduct.stock; editCategory.value = editingProduct.category; editStatus.value = editingProduct.status;
+  editNew.checked = editingProduct.is_new_arrival; editBest.checked = editingProduct.is_best_seller; editFeatured.checked = editingProduct.is_featured;
+  renderEditImages();
+  editModal.classList.add('open');
+}
+function closeEditModal(){ editModal.classList.remove('open'); }
+function renderEditImages(){
+  editImagesRow.innerHTML = (editingProduct.images||[]).map((img,i)=>`
+    <div class="img-thumb ${img.is_main?'main':''}">
+      <img src="${imgUrl(img.path)}">
+      <div class="thumb-actions">
+        <span title="Set as main" onclick="setMainImage('${editingProduct.id}',${i})"><i data-lucide="star"></i></span>
+        <span title="Delete" onclick="deleteImage('${editingProduct.id}',${i})"><i data-lucide="x"></i></span>
+      </div>
+    </div>`).join('');
+  refreshIcons();
+}
+async function setMainImage(id, idx){ const d = await apiSend(`/products/${id}/images/${idx}/main`,'PUT'); editingProduct.images = d.images; renderEditImages(); }
+async function deleteImage(id, idx){ const d = await apiSend(`/products/${id}/images/${idx}`,'DELETE'); editingProduct.images = d.images; renderEditImages(); }
+
+editForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  try {
+    await apiSend(`/products/${editId.value}`, 'PUT', {
+      name: editName.value, price: Number(editPrice.value), stock: Number(editStock.value),
+      category: editCategory.value, status: editStatus.value,
+      is_new_arrival: editNew.checked, is_best_seller: editBest.checked, is_featured: editFeatured.checked
+    });
+    if (pendingEditProductImages.length){
+      const fd = new FormData(); pendingEditProductImages.forEach((f,i)=>fd.append('images',f,`photo-${i+1}.jpg`));
+      await apiSend(`/products/${editId.value}/images`, 'POST', fd, true);
+      pendingEditProductImages = []; editAddImagesPreview.innerHTML = '';
+    }
+    editMsg.textContent = 'Saved!'; editMsg.style.color='var(--success)';
+    loadAllProducts();
+    setTimeout(closeEditModal, 600);
+  } catch(err){ editMsg.textContent = err.message; editMsg.style.color='var(--danger)'; }
+});
+
+// ---------- Inventory ----------
+async function loadInventory(){
+  const products = await apiGet('/products');
+  inventoryBody.innerHTML = products.map(p => {
+    const badge = p.status==='Sold Out' ? 'sold' : (p.stock<=3 ? 'low' : 'available');
+    const label = p.status==='Sold Out' ? 'Sold Out' : (p.stock<=3 ? 'Low Stock' : 'Available');
+    return `<tr><td>${p.name}</td><td>${p.stock}</td><td><span class="badge ${badge}">${label}</span></td>
+      <td><button class="btn btn-sm btn-outline" onclick="adjustStock('${p.id}',-1)">−</button> <button class="btn btn-sm btn-outline" onclick="adjustStock('${p.id}',1)">+</button></td></tr>`;
+  }).join('');
+}
+async function adjustStock(id, delta){ await apiSend(`/products/${id}/stock`,'PUT',{stock_delta:delta}); loadInventory(); }
+
+// ---------- Orders ----------
+let currentOrderStatus = '';
+orderTabs.querySelectorAll('.tab-btn').forEach(btn => btn.addEventListener('click', () => {
+  orderTabs.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active');
+  currentOrderStatus = btn.dataset.status; loadOrders();
+}));
+async function loadOrders(){
+  const orders = await apiGet('/orders' + (currentOrderStatus ? `?status=${currentOrderStatus}` : ''));
+  ordersBody.innerHTML = orders.map(o => `
+    <tr><td>#${o.order_number}</td><td>${o.customer_name}</td>
+    <td>${o.items.map(i=>i.product_name+' x'+i.quantity).join(', ')}</td>
+    <td>Rs. ${o.total.toLocaleString()}</td>
+    <td><span class="badge ${o.status.toLowerCase()}">${o.status}</span></td>
+    <td><button class="btn btn-sm btn-outline" onclick="openOrderModal('${o.id}')">View</button></td></tr>`).join('') || '<tr><td colspan="6" class="empty-note">No orders here.</td></tr>';
+}
+async function openOrderModal(id){
+  const o = await apiGet(`/orders/${id}`);
+  orderModalContent.innerHTML = `
+    <h3 style="margin-bottom:16px;">Order #${o.order_number}</h3>
+    <p><b>Customer:</b> ${o.customer_name}</p><p><b>Phone:</b> ${o.phone}</p><p><b>Email:</b> ${o.email}</p>
+    <p><b>Address:</b> ${o.house_street}, ${o.area}, ${o.city}, ${o.province}</p>
+    <p style="margin-top:10px;"><b>Items:</b></p>
+    ${o.items.map(i=>`<div style="font-size:.85rem; padding:4px 0;">${i.product_name} — ${i.shape}, ${i.length}, Size ${i.size} ×${i.quantity} — Rs. ${(i.price*i.quantity).toLocaleString()}</div>`).join('')}
+    ${o.discount ? `<p style="margin-top:6px; font-size:.85rem;"><b>Discount:</b> −Rs. ${o.discount.toLocaleString()}</p>` : ''}
+    <p style="font-size:.85rem;"><b>Delivery Charge:</b> Rs. ${(o.delivery_charge||0).toLocaleString()}</p>
+    <p style="margin-top:10px;"><b>Total:</b> Rs. ${o.total.toLocaleString()}</p>
+    ${o.sizing_photo ? `<p style="margin-top:10px;"><b>Sizing Photo:</b></p><img src="${imgUrl(o.sizing_photo)}" style="max-width:200px; border-radius:8px; margin-top:6px;">` : ''}
+    <div class="form-row" style="margin-top:16px;"><label>Status</label>
+      <select id="orderStatusSelect">${['New','Processing','Shipped','Completed','Cancelled'].map(s=>`<option ${s===o.status?'selected':''}>${s}</option>`).join('')}</select>
+    </div>
+    <div style="display:flex; gap:10px;">
+      <button class="btn" onclick="updateOrderStatus('${o.id}')">UPDATE ORDER</button>
+      <button class="btn btn-outline" onclick="orderModal.classList.remove('open')">Close</button>
+    </div>`;
+  orderModal.classList.add('open');
+}
+async function updateOrderStatus(id){
+  await apiSend(`/orders/${id}`, 'PUT', { status: document.getElementById('orderStatusSelect').value });
+  orderModal.classList.remove('open'); loadOrders();
+}
+
+// ---------- Custom Orders ----------
+async function loadCustomOrders(){
+  const requests = await apiGet('/custom-orders');
+  customOrdersBody.innerHTML = requests.map(r => `
+    <tr><td>#C${String(r.request_number).padStart(3,'0')}</td><td>${r.customer_name}<br><span style="color:var(--text-faint); font-size:.78rem;">${r.phone}</span></td>
+    <td style="font-size:.82rem;">${r.color||''}, ${r.shape||''}, ${r.length||''}</td>
+    <td>${r.inspiration_image ? `<a href="${imgUrl(r.inspiration_image)}" target="_blank"><i data-lucide="image"></i>View</a>` : '—'}</td>
+    <td><span class="badge ${r.status.toLowerCase()}">${r.status}</span></td>
+    <td>${r.status==='New' ? `<button class="btn btn-sm" onclick="setCustomStatus('${r.id}','Accepted')">Accept</button> <button class="btn btn-sm btn-danger" onclick="setCustomStatus('${r.id}','Rejected')">Reject</button>` : ''}</td>
+    </tr>`).join('') || '<tr><td colspan="6" class="empty-note">No custom requests yet.</td></tr>';
+  refreshIcons();
+}
+async function setCustomStatus(id, status){ await apiSend(`/custom-orders/${id}`,'PUT',{status}); loadCustomOrders(); }
+
+// ---------- Customers ----------
+async function loadCustomers(){
+  const customers = await apiGet('/customers');
+  customersBody.innerHTML = customers.map(c => `<tr><td>${c.name}</td><td>${c.phone}</td><td>${c.email}</td><td>${c.orders_count}</td><td>Rs. ${c.total_spent.toLocaleString()}</td></tr>`).join('') || '<tr><td colspan="5" class="empty-note">No customers yet.</td></tr>';
+}
+
+// ---------- Reviews ----------
+async function loadReviews(){
+  const reviews = await apiGet('/reviews');
+  reviewsBody.innerHTML = reviews.map(r => `<tr>
+    <td>${r.image ? `<img src="${imgUrl(r.image)}" style="width:44px;height:44px;object-fit:cover;border-radius:6px;">` : '—'}</td>
+    <td>${r.customer_name}</td><td>${'★'.repeat(r.rating)}</td><td>${r.comment}</td>
+    <td><button class="del-link" onclick="deleteReview('${r.id}')">Delete</button></td></tr>`).join('') || '<tr><td colspan="5" class="empty-note">No reviews yet.</td></tr>';
+}
+async function deleteReview(id){ await apiSend(`/reviews/${id}`,'DELETE'); loadReviews(); }
+
+// ---------- Messages (contact form) ----------
+function esc(str){ return String(str == null ? '' : str).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+let messagesCache = [];
+async function updateMsgBadge(){
+  try {
+    const msgs = await apiGet('/contact');
+    const unread = msgs.filter(m => !m.read).length;
+    msgBadge.textContent = unread; msgBadge.style.display = unread ? 'inline-block' : 'none';
+  } catch(e){}
+}
+async function loadMessages(){
+  messagesCache = await apiGet('/contact');
+  messagesBody.innerHTML = messagesCache.map(m => `
+    <tr style="${m.read ? '' : 'font-weight:600;'}">
+      <td style="white-space:nowrap; font-size:.8rem;">${new Date(m.created_at).toLocaleDateString()}</td>
+      <td>${esc(m.name)}<br><span style="color:var(--text-faint); font-size:.78rem; font-weight:400;">${esc(m.email)}</span></td>
+      <td>${esc(m.subject) || '—'}</td>
+      <td style="max-width:260px; font-size:.82rem; font-weight:400;">${esc(m.message.length > 70 ? m.message.slice(0,70) + '…' : m.message)}</td>
+      <td><span class="badge ${m.replied ? 'completed' : (m.read ? 'processing' : 'new')}">${m.replied ? 'Replied' : (m.read ? 'Read' : 'New')}</span></td>
+      <td><button class="btn btn-sm btn-outline" onclick="openMessage('${m.id}')">View / Reply</button></td>
+    </tr>`).join('') || '<tr><td colspan="6" class="empty-note">No messages yet.</td></tr>';
+  updateMsgBadge();
+}
+async function openMessage(id){
+  const m = messagesCache.find(x => x.id === id);
+  if (!m) return;
+  if (!m.read){ try { await apiSend(`/contact/${id}/read`, 'PUT', {}); m.read = true; loadMessages(); } catch(e){} }
+  msgModalContent.innerHTML = `
+    <h3 style="margin-bottom:14px;">Message from ${esc(m.name)}</h3>
+    <p style="font-size:.85rem;"><b>Email:</b> ${esc(m.email)}</p>
+    ${m.phone ? `<p style="font-size:.85rem;"><b>Phone:</b> ${esc(m.phone)}</p>` : ''}
+    <p style="font-size:.85rem;"><b>Subject:</b> ${esc(m.subject) || '—'}</p>
+    <p style="font-size:.78rem; color:var(--text-faint);">${new Date(m.created_at).toLocaleString()}</p>
+    <div style="background:var(--cream); border-radius:8px; padding:14px; margin:14px 0; font-size:.88rem; white-space:pre-wrap;">${esc(m.message)}</div>
+    ${m.replied ? `<p style="font-size:.78rem; color:var(--success); font-weight:700;">Replied on ${new Date(m.replied_at).toLocaleString()}</p>
+      <div style="background:var(--blush); border-radius:8px; padding:14px; margin:6px 0 14px; font-size:.85rem; white-space:pre-wrap;">${esc(m.reply_text)}</div>` : ''}
+    <div class="form-row"><label>${m.replied ? 'Send another reply' : 'Your reply'} (goes to ${esc(m.email)})</label>
+      <textarea id="msgReplyText" rows="5" placeholder="Write your reply…"></textarea></div>
+    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+      <button class="btn" id="msgSendBtn" onclick="sendReply('${m.id}')">SEND REPLY</button>
+      <button class="btn btn-outline" onclick="msgModal.classList.remove('open')">Close</button>
+      <button class="btn btn-danger btn-sm" style="margin-left:auto;" onclick="deleteMessage('${m.id}')">Delete</button>
+    </div>
+    <div id="msgReplyStatus" style="font-size:.85rem; margin-top:10px;"></div>`;
+  msgModal.classList.add('open');
+}
+async function sendReply(id){
+  const text = document.getElementById('msgReplyText').value.trim();
+  const status = document.getElementById('msgReplyStatus');
+  const btn = document.getElementById('msgSendBtn');
+  if (!text){ status.textContent = 'Please write a reply first.'; status.style.color='var(--danger)'; return; }
+  btn.disabled = true; btn.textContent = 'Sending…';
+  try {
+    await apiSend(`/contact/${id}/reply`, 'POST', { reply: text });
+    status.textContent = 'Reply sent to the customer!'; status.style.color='var(--success)';
+    await loadMessages();
+    setTimeout(() => msgModal.classList.remove('open'), 900);
+  } catch(err){
+    status.textContent = err.message; status.style.color='var(--danger)';
+    btn.disabled = false; btn.textContent = 'SEND REPLY';
+  }
+}
+async function deleteMessage(id){
+  if (!confirm('Delete this message permanently?')) return;
+  await apiSend(`/contact/${id}`, 'DELETE');
+  msgModal.classList.remove('open'); loadMessages();
+}
+
+// ---------- Coupons ----------
+async function loadCoupons(){
+  const coupons = await apiGet('/coupons');
+  couponsBody.innerHTML = coupons.map(c => `<tr><td>${c.code}</td><td>${c.discount_percent}%</td>
+    <td><input type="checkbox" ${c.active?'checked':''} onchange="toggleCoupon('${c.id}', this.checked)"></td>
+    <td><button class="del-link" onclick="deleteCoupon('${c.id}')">Delete</button></td></tr>`).join('') || '<tr><td colspan="4" class="empty-note">No coupons yet.</td></tr>';
+}
+addCouponForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  try { await apiSend('/coupons','POST',{code:cpCode.value, discount_percent:Number(cpDiscount.value)}); e.target.reset(); loadCoupons(); }
+  catch(err){ alert(err.message); }
+});
+async function toggleCoupon(id, active){ await apiSend(`/coupons/${id}`,'PUT',{active}); }
+async function deleteCoupon(id){ await apiSend(`/coupons/${id}`,'DELETE'); loadCoupons(); }
+
+// ---------- Homepage: Banner ----------
+async function loadBanner(){
+  const hp = await apiGet('/homepage');
+  bnTitle.value = hp.banner_title; bnSubtitle.value = hp.banner_subtitle;
+}
+bannerForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const fd = new FormData(); fd.append('banner_title', bnTitle.value); fd.append('banner_subtitle', bnSubtitle.value);
+  if (bnImage.files[0]) fd.append('banner_image', bnImage.files[0]);
+  await apiSend('/homepage','PUT',fd,true);
+  bannerMsg.textContent = 'Saved!'; bannerMsg.style.color='var(--success)';
+});
+
+// ---------- Delivery Charges ----------
+async function loadDelivery(){
+  const hp = await apiGet('/homepage');
+  dcAmount.value = hp.delivery_charge !== undefined ? hp.delivery_charge : 250;
+  dcRatesList.innerHTML = '';
+  (hp.delivery_rates || []).forEach(r => addRateRow(r.location, r.charge));
+}
+function addRateRow(location, charge){
+  const row = document.createElement('div');
+  row.className = 'dc-rate-row';
+  row.style.cssText = 'display:flex; gap:10px; margin-bottom:8px; align-items:center;';
+  row.innerHTML = `
+    <input type="text" class="dc-loc" placeholder="City or province" style="flex:1;">
+    <input type="number" class="dc-charge" placeholder="Rs." min="0" style="width:110px;">
+    <button type="button" class="del-link" title="Remove" onclick="this.parentElement.remove()">✕</button>`;
+  row.querySelector('.dc-loc').value = location || '';
+  row.querySelector('.dc-charge').value = charge !== undefined ? charge : '';
+  dcRatesList.appendChild(row);
+}
+deliveryForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  try {
+    const rates = Array.from(document.querySelectorAll('.dc-rate-row')).map(r => ({
+      location: r.querySelector('.dc-loc').value.trim(),
+      charge: r.querySelector('.dc-charge').value
+    })).filter(r => r.location && r.charge !== '');
+    const fd = new FormData();
+    fd.append('delivery_charge', dcAmount.value);
+    fd.append('delivery_rates', JSON.stringify(rates));
+    await apiSend('/homepage','PUT',fd,true);
+    deliveryMsg.textContent = 'Saved!'; deliveryMsg.style.color='var(--success)';
+  } catch(err){ deliveryMsg.textContent = err.message; deliveryMsg.style.color='var(--danger)'; }
+});
+
+// ---------- Homepage: Featured ----------
+async function loadFeaturedList(){
+  const products = await apiGet('/products');
+  featuredList.innerHTML = products.map(p => `<div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border); font-size:.88rem;">
+    <span>${p.name}</span><label><input type="checkbox" ${p.is_featured?'checked':''} onchange="toggleFeatured('${p.id}', this.checked)"> Featured</label></div>`).join('');
+}
+async function toggleFeatured(id, val){ await apiSend(`/products/${id}`,'PUT',{is_featured:val}); }
+
+// ---------- Homepage: Promotions ----------
+async function loadPromo(){ const hp = await apiGet('/homepage'); promoText.value = hp.promotions_text; }
+promoForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const fd = new FormData(); fd.append('promotions_text', promoText.value);
+  await apiSend('/homepage','PUT',fd,true);
+  promoMsg.textContent = 'Saved!'; promoMsg.style.color='var(--success)';
+});
+
+// ---------- Gallery ----------
+async function loadGallery(){
+  const images = await apiGet('/gallery');
+  galleryGridAdmin.innerHTML = images.map(g => `<div class="img-thumb"><img src="${imgUrl(g.path)}"><div class="thumb-actions"><span title="Delete" onclick="deleteGalleryImage('${g.id}')"><i data-lucide="x"></i></span></div></div>`).join('') || '<p class="empty-note">No gallery photos yet.</p>';
+  refreshIcons();
+}
+async function uploadGallery(){
+  if (!pendingGalleryImages.length) return;
+  const fd = new FormData(); pendingGalleryImages.forEach((f,i)=>fd.append('images',f,`photo-${i+1}.jpg`));
+  await apiSend('/gallery','POST',fd,true);
+  galleryUpload.value=''; pendingGalleryImages = []; galleryUploadPreview.innerHTML = '';
+  loadGallery();
+}
+async function deleteGalleryImage(id){ await apiSend(`/gallery/${id}`,'DELETE'); loadGallery(); }
+
+// ---------- Analytics ----------
+async function loadAnalytics(){
+  const d = await apiGet('/dashboard');
+  analyticsStatGrid.innerHTML = `
+    <div class="stat-card"><div class="num">Rs. ${d.total_sales.toLocaleString()}</div><div class="label">Total Revenue</div></div>
+    <div class="stat-card"><div class="num">${d.total_orders}</div><div class="label">Total Orders</div></div>`;
+  statusBreakdown.innerHTML = Object.entries(d.orders_by_status).map(([status,count])=>`
+    <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border); font-size:.88rem;"><span>${status}</span><span>${count}</span></div>`).join('');
+}
+
+// ---------- Settings ----------
+passwordForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  try {
+    await apiSend('/auth','POST',{action:'change_password', password:curPass.value, newPassword:newPass.value});
+    passwordMsg.textContent = 'Password updated!'; passwordMsg.style.color='var(--success)'; e.target.reset();
+  } catch(err){ passwordMsg.textContent = err.message; passwordMsg.style.color='var(--danger)'; }
+});
+
+refreshIcons();
+checkSession();
+</script>
+</body>
+</html>

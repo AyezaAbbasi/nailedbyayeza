@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shop — nailedbyayeza</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<div id="site-header"></div>
+<section style="padding-top:120px;">
+  <div class="container">
+    <div class="section-head"><span class="tag">Shop</span><h2>All Nail Sets</h2></div>
+    <div class="shop-layout">
+      <aside class="filters-box">
+        <div class="filter-group">
+          <h4>Category</h4>
+          <div id="categoryFilters"></div>
+        </div>
+        <div class="filter-group">
+          <h4>Nail Shape</h4>
+          <label><input type="checkbox" value="Almond" class="shapeFilter"> Almond</label>
+          <label><input type="checkbox" value="Coffin" class="shapeFilter"> Coffin</label>
+          <label><input type="checkbox" value="Oval" class="shapeFilter"> Oval</label>
+          <label><input type="checkbox" value="Square" class="shapeFilter"> Square</label>
+          <label><input type="checkbox" value="Stiletto" class="shapeFilter"> Stiletto</label>
+        </div>
+        <div class="filter-group">
+          <h4>Nail Length</h4>
+          <label><input type="checkbox" value="Short" class="lengthFilter"> Short</label>
+          <label><input type="checkbox" value="Medium" class="lengthFilter"> Medium</label>
+          <label><input type="checkbox" value="Long" class="lengthFilter"> Long</label>
+        </div>
+        <div class="filter-group">
+          <h4>Price (Rs.)</h4>
+          <div class="form-grid-2">
+            <input type="number" id="minPrice" placeholder="Min">
+            <input type="number" id="maxPrice" placeholder="Max">
+          </div>
+        </div>
+        <div class="filter-group">
+          <label><input type="checkbox" id="availabilityFilter"> In Stock Only</label>
+        </div>
+        <button class="btn btn-outline btn-block btn-sm" onclick="applyFilters()">Apply Filters</button>
+        <button class="btn btn-block btn-sm" style="margin-top:8px; background:transparent; color:var(--text-faint);" onclick="clearFilters()">Clear All</button>
+      </aside>
+      <div>
+        <div class="shop-toolbar">
+          <span id="resultCount" style="color:var(--text-soft); font-size:.9rem;"></span>
+          <select id="sortSelect" onchange="applyFilters()">
+            <option value="newest">Newest</option>
+            <option value="price_asc">Price: Low to High</option>
+            <option value="price_desc">Price: High to Low</option>
+          </select>
+        </div>
+        <div class="grid" id="shopGrid"><div class="loading-text">Loading…</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+<div id="site-footer"></div>
+
+<script src="assets/js/api.js"></script>
+<script src="assets/js/cart.js"></script>
+<script src="assets/js/shared-ui.js"></script>
+<script src="assets/js/components.js"></script>
+<script>
+  const params = new URLSearchParams(location.search);
+
+  async function loadCategories(){
+    const cats = await apiGet('/categories');
+    const box = document.getElementById('categoryFilters');
+    box.innerHTML = cats.map(c => `<label><input type="checkbox" value="${c}" class="categoryFilter" ${params.get('category')===c?'checked':''}> ${c}</label>`).join('');
+  }
+
+  function buildQuery(){
+    const q = new URLSearchParams();
+    document.querySelectorAll('.categoryFilter:checked').forEach(el => q.append('category', el.value));
+    document.querySelectorAll('.shapeFilter:checked').forEach(el => q.append('shape', el.value));
+    document.querySelectorAll('.lengthFilter:checked').forEach(el => q.append('length', el.value));
+    const min = document.getElementById('minPrice').value; if (min) q.set('minPrice', min);
+    const max = document.getElementById('maxPrice').value; if (max) q.set('maxPrice', max);
+    if (document.getElementById('availabilityFilter').checked) q.set('status', 'Available');
+    q.set('sort', document.getElementById('sortSelect').value);
+    return q;
+  }
+
+  async function applyFilters(){
+    const grid = document.getElementById('shopGrid');
+    grid.innerHTML = '<div class="loading-text">Loading…</div>';
+    try {
+      // multiple categories/shapes aren't combined server-side beyond one value each in this simple version,
+      // so when several are checked we fetch each and merge client-side.
+      const q = buildQuery();
+      const categories = q.getAll('category'); const shapes = q.getAll('shape'); const lengths = q.getAll('length');
+      const base = new URLSearchParams(q); base.delete('category'); base.delete('shape'); base.delete('length');
+
+      let combos = [{}];
+      if (categories.length) combos = categories.map(c => ({ category: c }));
+      if (shapes.length) combos = combos.flatMap(c => shapes.map(s => ({...c, shape: s})));
+      if (lengths.length) combos = combos.flatMap(c => lengths.map(l => ({...c, length: l})));
+
+      let all = [];
+      for (const combo of combos){
+        const qp = new URLSearchParams(base);
+        Object.entries(combo).forEach(([k,v]) => qp.set(k,v));
+        const results = await apiGet('/products?' + qp.toString());
+        all = all.concat(results);
+      }
+      const unique = Array.from(new Map(all.map(p => [p.id, p])).values());
+      grid.innerHTML = unique.length ? unique.map(renderProductCard).join('') : '<p class="loading-text">No products match these filters.</p>';
+      document.getElementById('resultCount').textContent = `${unique.length} result${unique.length!==1?'s':''}`;
+    } catch(e){ grid.innerHTML = '<p class="error-text">Could not load products.</p>'; }
+  }
+
+  function clearFilters(){
+    document.querySelectorAll('.categoryFilter,.shapeFilter,.lengthFilter').forEach(el => el.checked=false);
+    document.getElementById('minPrice').value=''; document.getElementById('maxPrice').value='';
+    document.getElementById('availabilityFilter').checked=false;
+    applyFilters();
+  }
+
+  (async () => {
+    await loadCategories();
+    if (params.get('filter')==='new') { const q=new URLSearchParams(); const r=await apiGet('/products?newArrivals=true'); document.getElementById('shopGrid').innerHTML = r.map(renderProductCard).join(''); document.getElementById('resultCount').textContent = r.length+' results'; }
+    else if (params.get('filter')==='best') { const r=await apiGet('/products?bestSellers=true'); document.getElementById('shopGrid').innerHTML = r.map(renderProductCard).join(''); document.getElementById('resultCount').textContent = r.length+' results'; }
+    else applyFilters();
+  })();
+</script>
+</body>
+</html>

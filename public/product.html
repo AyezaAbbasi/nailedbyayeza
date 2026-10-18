@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Product — nailedbyayeza</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css?v=2">
+</head>
+<body>
+<div id="site-header"></div>
+<section style="padding-top:120px;">
+  <div class="container">
+    <div id="productContent"><div class="loading-text">Loading…</div></div>
+  </div>
+</section>
+
+<section id="reviewsSection">
+  <div class="container">
+    <div class="section-head reveal"><span class="tag">Customer Voices</span><h2>Reviews</h2></div>
+    <div class="grid" id="productReviews" style="margin-bottom:30px;"></div>
+    <div style="max-width:500px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:26px;">
+      <h3 style="font-size:1.1rem; margin-bottom:14px;">Leave a review</h3>
+      <form id="reviewForm">
+        <div class="form-row"><label>Your Name</label><input type="text" id="revName" required></div>
+        <div class="form-row"><label>Rating</label>
+          <div class="star-pick" id="starPick" style="display:flex; gap:6px; font-size:1.4rem;">
+            <span data-v="1" style="cursor:pointer; color:var(--border);">★</span><span data-v="2" style="cursor:pointer; color:var(--border);">★</span><span data-v="3" style="cursor:pointer; color:var(--border);">★</span><span data-v="4" style="cursor:pointer; color:var(--border);">★</span><span data-v="5" style="cursor:pointer; color:var(--border);">★</span>
+          </div>
+        </div>
+        <div class="form-row"><label>Comment</label><textarea id="revComment" rows="3" required></textarea></div>
+        <div class="form-row"><label>Add a Photo (optional)</label><input type="file" id="revImage" accept="image/*"></div>
+        <button type="submit" class="btn btn-gold">Submit Review</button>
+        <div id="revMsg" style="font-size:.85rem; margin-top:10px;"></div>
+      </form>
+    </div>
+  </div>
+</section>
+
+<section style="background:var(--surface-2);">
+  <div class="container">
+    <div class="section-head reveal"><span class="tag">You May Also Like</span><h2>Related Designs</h2></div>
+    <div class="grid" id="relatedGrid"></div>
+  </div>
+</section>
+
+<section id="recentlyViewedSection" style="display:none;">
+  <div class="container">
+    <div class="section-head reveal"><span class="tag">Continue Browsing</span><h2>Recently Viewed</h2></div>
+    <div class="grid" id="recentGrid"></div>
+  </div>
+</section>
+
+<div id="site-footer"></div>
+
+<script src="assets/js/api.js"></script>
+<script src="assets/js/cart.js"></script>
+<script src="assets/js/shared-ui.js"></script>
+<script src="assets/js/components.js"></script>
+<script src="assets/js/animations.js"></script>
+<script>
+  const productId = new URLSearchParams(location.search).get('id');
+  let product = null;
+  let selected = { shape:null, length:null, size:null, quantity:1 };
+
+  function trackRecentlyViewed(id){
+    let list = JSON.parse(localStorage.getItem('nba_recent')||'[]').filter(x=>x!==id);
+    list.unshift(id);
+    localStorage.setItem('nba_recent', JSON.stringify(list.slice(0,8)));
+  }
+
+  function selectOption(group, value, el){
+    selected[group] = value;
+    el.parentElement.querySelectorAll('.option-chip').forEach(c => c.classList.remove('selected'));
+    el.classList.add('selected');
+  }
+
+  function galleryHtml(){
+    const images = product.images && product.images.length ? product.images : [{path:null}];
+    const main = images.find(i=>i.is_main) || images[0];
+    return `
+      ${photoSlot(main.path, product.name, product.name.replace(/\s+/g,'-').toLowerCase()+'-1.jpg', 'gallery-main')}
+      <div class="gallery-thumbs">
+        ${images.map((img,i) => `<div onclick="swapMain(${i})">${photoSlot(img.path, product.name, product.name.replace(/\s+/g,'-').toLowerCase()+'-'+(i+1)+'.jpg', 'thumb-'+i)}</div>`).join('')}
+      </div>`;
+  }
+  function swapMain(i){
+    const img = product.images[i];
+    const mainEl = document.querySelector('.gallery-main');
+    if (img.path){ mainEl.classList.remove('missing'); mainEl.innerHTML = `<img src="${imgUrl(img.path)}">`; }
+    else { mainEl.classList.add('missing'); mainEl.innerHTML=''; mainEl.setAttribute('data-filename', product.name.replace(/\s+/g,'-').toLowerCase()+'.jpg'); }
+  }
+
+  function renderProduct(){
+    selected.shape = product.shape_options[0]; selected.length = product.length_options[0]; selected.size = product.size_options[0];
+    const soldOut = product.status === 'Sold Out';
+    document.getElementById('productContent').innerHTML = `
+      <div class="product-detail">
+        <div>${galleryHtml()}</div>
+        <div>
+          <div class="card-badges">
+            ${product.is_new_arrival?'<span class="badge badge-new">New</span>':''}
+            ${product.is_best_seller?'<span class="badge badge-best">Best Seller</span>':''}
+            ${soldOut?'<span class="badge badge-sold">Sold Out</span>':''}
+          </div>
+          <h1 style="font-size:1.9rem;">${product.name}</h1>
+          <div class="pd-price">Rs. ${Number(product.price).toLocaleString()}</div>
+          <p style="color:var(--text-soft);">${product.description||''}</p>
+
+          <div class="form-row" style="margin-top:24px;"><label>Nail Shape</label>${optionChips('shape', product.shape_options, selected.shape, 'selectOption')}</div>
+          <div class="form-row"><label>Nail Length</label>${optionChips('length', product.length_options, selected.length, 'selectOption')}</div>
+          <div class="form-row"><label>Size</label>${optionChips('size', product.size_options, selected.size, 'selectOption')}</div>
+
+          <div class="form-row">
+            <label>Quantity</label>
+            <select id="qtySelect" style="width:140px;">
+              <option value="1">1</option><option value="2">2</option><option value="3">3</option>
+              <option value="4">4</option><option value="5">5</option>
+              <option value="10">10 (bulk)</option><option value="15">15 (bulk)</option>
+            </select>
+          </div>
+
+          <div style="display:flex; gap:14px; margin-top:20px;">
+            <button class="btn btn-outline" ${soldOut?'disabled':''} onclick="handleAddToCart(false)">Add to Cart</button>
+            <button class="btn btn-gold" ${soldOut?'disabled':''} onclick="handleAddToCart(true)">Buy Now</button>
+          </div>
+
+          <div class="pd-meta">
+            <div><strong>Finish:</strong> ${product.finish || '—'}</div>
+            <div><strong>What's Included:</strong> ${product.whats_included || '1 set of 10 nails, glue tabs, file'}</div>
+            <div><strong>Application Time:</strong> ${product.application_time}</div>
+            <div><strong>Wear Time:</strong> ${product.wear_time}</div>
+          </div>
+          <p style="font-size:.82rem; color:var(--text-faint); margin-top:10px;">Need help with sizing? Use the coin-method sizing guide at checkout.</p>
+        </div>
+      </div>`;
+  }
+
+  function handleAddToCart(buyNow){
+    const qty = Number(document.getElementById('qtySelect').value);
+    addToCart({ product_id: product.id, product_name: product.name, price: product.price, quantity: qty, shape: selected.shape, length: selected.length, size: selected.size });
+    showToast('Added to bag');
+    if (buyNow) location.href = 'checkout.html';
+  }
+
+  async function loadRelated(){
+    try {
+      const related = await apiGet(`/products?category=${encodeURIComponent(product.category)}`);
+      document.getElementById('relatedGrid').innerHTML = related.filter(p=>p.id!==product.id).slice(0,4).map(renderProductCard).join('') || '<p class="loading-text">No related designs yet.</p>';
+    } catch(e){}
+  }
+  async function loadRecentlyViewed(){
+    const ids = JSON.parse(localStorage.getItem('nba_recent')||'[]').filter(id=>id!==productId);
+    if (!ids.length) return;
+    document.getElementById('recentlyViewedSection').style.display='block';
+    const products = await Promise.all(ids.slice(0,4).map(id => apiGet(`/products/${id}`).catch(()=>null)));
+    document.getElementById('recentGrid').innerHTML = products.filter(Boolean).map(renderProductCard).join('');
+  }
+  async function loadReviews(){
+    const reviews = await apiGet(`/reviews?product_id=${productId}`);
+    document.getElementById('productReviews').innerHTML = reviews.length ? reviews.map(r=>`
+      <div class="review-card">${r.image ? `<img src="${imgUrl(r.image)}" class="review-photo" alt="Photo from ${r.customer_name}">` : ''}<div class="stars">${starString(r.rating)}</div><p>${r.comment}</p><div class="who">— ${r.customer_name}</div></div>`).join('')
+      : '<p class="loading-text">No reviews yet for this design.</p>';
+  }
+
+  let selectedRating = 0;
+  document.querySelectorAll('#starPick span').forEach(star => {
+    star.addEventListener('click', () => {
+      selectedRating = parseInt(star.dataset.v);
+      document.querySelectorAll('#starPick span').forEach(s => s.style.color = s.dataset.v <= selectedRating ? 'var(--gold)' : 'var(--border)');
+    });
+  });
+  document.getElementById('reviewForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const msg = document.getElementById('revMsg');
+    if (!selectedRating){ msg.textContent='Please select a rating.'; msg.style.color='var(--danger)'; return; }
+    try {
+      const fd = new FormData();
+      fd.append('customer_name', document.getElementById('revName').value);
+      fd.append('rating', selectedRating);
+      fd.append('comment', document.getElementById('revComment').value);
+      fd.append('product_id', productId);
+      const photo = document.getElementById('revImage').files[0];
+      if (photo) fd.append('image', photo);
+      await apiPost('/reviews', fd, true);
+      msg.textContent='Thanks for your review!'; msg.style.color='var(--success)';
+      e.target.reset(); selectedRating=0;
+      document.querySelectorAll('#starPick span').forEach(s => s.style.color = 'var(--border)');
+      loadReviews();
+    } catch(err){ msg.textContent=err.message; msg.style.color='var(--danger)'; }
+  });
+
+  (async () => {
+    try {
+      product = await apiGet(`/products/${productId}`);
+      renderProduct();
+      trackRecentlyViewed(productId);
+      loadRelated(); loadRecentlyViewed(); loadReviews();
+    } catch(e){ document.getElementById('productContent').innerHTML = '<p class="error-text">Product not found.</p>'; }
+  })();
+</script>
+</body>
+</html>

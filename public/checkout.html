@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Checkout — nailedbyayeza</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css?v=2">
+</head>
+<body>
+<div id="site-header"></div>
+<section style="padding-top:120px;">
+  <div class="container">
+    <div class="section-head reveal"><span class="tag">Almost there</span><h2>Checkout</h2></div>
+    <div class="product-detail">
+      <form id="checkoutForm">
+        <h3 style="font-size:1.1rem; margin-bottom:16px;">Personal Information</h3>
+        <div class="form-grid-2">
+          <div class="form-row"><label>Full Name</label><input type="text" id="custName" required></div>
+          <div class="form-row"><label>Phone Number</label><input type="tel" id="custPhone" required></div>
+        </div>
+        <div class="form-row"><label>Email</label><input type="email" id="custEmail" required></div>
+
+        <h3 style="font-size:1.1rem; margin:26px 0 16px;">Delivery Information</h3>
+        <div class="form-row"><label>House / Street</label><input type="text" id="houseStreet" required></div>
+        <div class="form-grid-2">
+          <div class="form-row"><label>Area</label><input type="text" id="area" required></div>
+          <div class="form-row"><label>City</label><input type="text" id="city" required></div>
+        </div>
+        <div class="form-grid-2">
+          <div class="form-row"><label>Province</label>
+            <select id="province" required>
+              <option value="">Select</option>
+              <option>Punjab</option><option>Sindh</option><option>KPK</option><option>Balochistan</option>
+              <option>Islamabad Capital Territory</option><option>Gilgit-Baltistan</option><option>Azad Kashmir</option>
+            </select>
+          </div>
+          <div class="form-row"><label>Postal Code</label><input type="text" id="postalCode"></div>
+        </div>
+
+        <h3 style="font-size:1.1rem; margin:26px 0 16px;">Nail Sizing (Coin Method)</h3>
+        <div style="background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:20px; margin-bottom:20px;">
+          <p style="font-size:.85rem; color:var(--text-soft); margin-bottom:12px;">
+            Hold a coin flat against the tip of your middle finger and take a photo from directly above, showing your nail bed and the coin side by side.
+            This helps us confirm your exact size. (Optional but recommended — max 2MB.)
+          </p>
+          <input type="file" id="sizingPhoto" accept="image/*">
+          <div id="sizingPhotoMsg" style="font-size:.8rem; margin-top:8px; color:var(--text-faint);"></div>
+        </div>
+
+        <h3 style="font-size:1.1rem; margin:26px 0 16px;">Payment Method</h3>
+        <div class="option-row" id="paymentOptions">
+          <div class="option-chip selected" data-value="Cash on Delivery" onclick="selectPayment(this)">Cash on Delivery</div>
+          <div class="option-chip" data-value="Bank Transfer" onclick="selectPayment(this)">Bank Transfer</div>
+          <div class="option-chip" data-value="Easypaisa/JazzCash" onclick="selectPayment(this)">Easypaisa/JazzCash</div>
+        </div>
+
+        <h3 style="font-size:1.1rem; margin:26px 0 16px;">Coupon Code</h3>
+        <div style="display:flex; gap:10px;">
+          <input type="text" id="couponInput" placeholder="Enter code" style="flex:1; padding:13px; border-radius:10px; border:1px solid var(--border); background:var(--surface); color:var(--text);">
+          <button type="button" class="btn btn-outline btn-sm" onclick="applyCoupon()">Apply</button>
+        </div>
+        <div id="couponMsg" style="font-size:.85rem; margin-top:8px;"></div>
+
+        <button type="submit" class="btn btn-gold btn-block" style="margin-top:30px;">Place Order</button>
+        <div id="checkoutMsg" style="font-size:.85rem; margin-top:12px; text-align:center;"></div>
+      </form>
+
+      <div>
+        <div style="background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:24px; position:sticky; top:110px;">
+          <h3 style="font-size:1.1rem; margin-bottom:16px;">Order Summary</h3>
+          <div id="orderItemsList"></div>
+          <div style="border-top:1px solid var(--border); margin-top:16px; padding-top:16px;">
+            <div style="display:flex; justify-content:space-between; margin-bottom:8px;"><span>Subtotal</span><span id="sumSubtotal">Rs. 0</span></div>
+            <div style="display:flex; justify-content:space-between; margin-bottom:8px; color:var(--success);" id="sumDiscountRow"></div>
+            <div style="display:flex; justify-content:space-between; margin-bottom:8px;"><span>Delivery Charges</span><span id="sumDelivery">Rs. 0</span></div>
+            <div style="display:flex; justify-content:space-between; font-weight:700; font-size:1.1rem; margin-top:10px;"><span>Total</span><span id="sumTotal">Rs. 0</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+<div id="site-footer"></div>
+
+<script src="assets/js/api.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script src="assets/js/cart.js"></script>
+<script src="assets/js/shared-ui.js"></script>
+<script src="assets/js/components.js"></script>
+<script src="assets/js/animations.js"></script>
+<script>
+  let selectedPaymentMethod = 'Cash on Delivery';
+  let appliedDiscountPercent = 0;
+  let deliveryCharge = 250; // overwritten with the admin's configured value once /homepage loads
+
+  function selectPayment(el){
+    document.querySelectorAll('#paymentOptions .option-chip').forEach(c => c.classList.remove('selected'));
+    el.classList.add('selected'); selectedPaymentMethod = el.dataset.value;
+  }
+
+  function renderSummary(){
+    const cart = getCart();
+    document.getElementById('orderItemsList').innerHTML = cart.map(i => `
+      <div style="display:flex; justify-content:space-between; font-size:.88rem; margin-bottom:10px;">
+        <span>${i.product_name} <span style="color:var(--text-faint);">×${i.quantity}</span></span>
+        <span>Rs. ${(i.price*i.quantity).toLocaleString()}</span>
+      </div>`).join('') || '<p class="loading-text" style="padding:10px 0;">Your bag is empty.</p>';
+    const subtotal = cartTotal();
+    const discount = Math.round(subtotal * (appliedDiscountPercent/100));
+    document.getElementById('sumSubtotal').textContent = `Rs. ${subtotal.toLocaleString()}`;
+    document.getElementById('sumDiscountRow').innerHTML = discount ? `<span>Discount</span><span>−Rs. ${discount.toLocaleString()}</span>` : '';
+    document.getElementById('sumDelivery').textContent = `Rs. ${deliveryCharge.toLocaleString()}`;
+    document.getElementById('sumTotal').textContent = `Rs. ${(subtotal-discount+deliveryCharge).toLocaleString()}`;
+  }
+
+  async function loadDeliveryCharge(){
+    try {
+      const hp = await apiGet('/homepage');
+      if (hp.delivery_charge !== undefined) deliveryCharge = hp.delivery_charge;
+    } catch(e){}
+    renderSummary();
+  }
+
+  async function applyCoupon(){
+    const code = document.getElementById('couponInput').value.trim();
+    const msg = document.getElementById('couponMsg');
+    if (!code) return;
+    try {
+      const res = await apiPost('/coupons/validate', { code });
+      appliedDiscountPercent = res.discount_percent;
+      msg.textContent = `Coupon applied — ${res.discount_percent}% off`; msg.style.color='var(--success)';
+      renderSummary();
+    } catch(e){ appliedDiscountPercent=0; msg.textContent = e.message; msg.style.color='var(--danger)'; renderSummary(); }
+  }
+
+  document.getElementById('sizingPhoto').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    const msgEl = document.getElementById('sizingPhotoMsg');
+    if (file && file.size > 2*1024*1024){
+      msgEl.textContent = 'File too large — please choose an image under 2MB.'; msgEl.style.color='var(--danger)';
+      e.target.value = '';
+    } else if (file){ msgEl.textContent = `Selected: ${file.name}`; msgEl.style.color='var(--text-faint)'; }
+  });
+
+  // ---------- EmailJS: sends you an order notification straight from the browser ----------
+  // Replace these 3 values after setting up your free account at emailjs.com
+  const EMAILJS_PUBLIC_KEY = 'YOUR_PUBLIC_KEY';
+  const EMAILJS_SERVICE_ID = 'service_iz4z5xu';
+  const EMAILJS_TEMPLATE_ID = 'template_n1t1ttl';
+  if (window.emailjs) emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY });
+
+  function sendOrderEmailNotification(orderNumber, cart, customerName, phone, email, address, paymentMethod, total){
+    if (!window.emailjs || EMAILJS_PUBLIC_KEY === 'YOUR_PUBLIC_KEY') return; // not configured yet
+    const itemsText = cart.map(i => `${i.product_name} (${i.shape||''}, ${i.length||''}, Size ${i.size||''}) x${i.quantity} — Rs. ${(i.price*i.quantity).toLocaleString()}`).join('\n');
+    emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+      order_number: orderNumber,
+      customer_name: customerName,
+      phone: phone,
+      email: email,
+      address: address,
+      payment_method: paymentMethod,
+      items: itemsText,
+      total: `Rs. ${total.toLocaleString()}`
+    }).catch(err => console.error('EmailJS send failed:', err));
+  }
+
+  document.getElementById('checkoutForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const cart = getCart();
+    const msgEl = document.getElementById('checkoutMsg');
+    if (!cart.length){ msgEl.textContent='Your bag is empty.'; msgEl.style.color='var(--danger)'; return; }
+
+    const fd = new FormData();
+    fd.append('customer_name', document.getElementById('custName').value);
+    fd.append('phone', document.getElementById('custPhone').value);
+    fd.append('email', document.getElementById('custEmail').value);
+    fd.append('house_street', document.getElementById('houseStreet').value);
+    fd.append('area', document.getElementById('area').value);
+    fd.append('city', document.getElementById('city').value);
+    fd.append('province', document.getElementById('province').value);
+    fd.append('postal_code', document.getElementById('postalCode').value);
+    fd.append('payment_method', selectedPaymentMethod);
+    fd.append('items', JSON.stringify(cart));
+    const coupon = document.getElementById('couponInput').value.trim();
+    if (coupon) fd.append('coupon_code', coupon);
+    const photo = document.getElementById('sizingPhoto').files[0];
+    if (photo) fd.append('sizing_photo', photo);
+
+    try {
+      const res = await apiPost('/orders', fd, true);
+      sendOrderEmailNotification(
+        res.order_number,
+        cart,
+        document.getElementById('custName').value,
+        document.getElementById('custPhone').value,
+        document.getElementById('custEmail').value,
+        `${document.getElementById('houseStreet').value}, ${document.getElementById('area').value}, ${document.getElementById('city').value}, ${document.getElementById('province').value}`,
+        selectedPaymentMethod,
+        res.total
+      );
+      clearCart();
+      localStorage.setItem('nba_last_order', res.order_id);
+      location.href = `order-confirmation.html?id=${res.order_id}`;
+    } catch(err){ msgEl.textContent = err.message; msgEl.style.color='var(--danger)'; }
+  });
+
+  loadDeliveryCharge();
+</script>
+</body>
+</html>

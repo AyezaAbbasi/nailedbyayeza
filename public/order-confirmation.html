@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Order Confirmed — nailedbyayeza</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css?v=2">
+</head>
+<body>
+<div id="site-header"></div>
+<section style="padding-top:140px; min-height:70vh;">
+  <div class="container" style="max-width:640px;">
+    <div id="confirmationContent" class="loading-text">Loading your order…</div>
+  </div>
+</section>
+<div id="site-footer"></div>
+
+<script src="assets/js/api.js"></script>
+<script src="assets/js/cart.js"></script>
+<script src="assets/js/shared-ui.js"></script>
+<script src="assets/js/components.js"></script>
+<script src="assets/js/animations.js"></script>
+<script>
+  const orderId = new URLSearchParams(location.search).get('id') || localStorage.getItem('nba_last_order');
+  (async () => {
+    try {
+      const order = await apiGet(`/orders/${orderId}`);
+      document.getElementById('confirmationContent').innerHTML = `
+        <div style="text-align:center; margin-bottom:30px;">
+          <div style="font-size:3rem;">🎉</div>
+          <h1 style="font-size:1.8rem; margin-top:10px;">Order Placed Successfully!</h1>
+          <p style="color:var(--text-soft); margin-top:8px;">Order #${order.order_number}</p>
+        </div>
+        <div style="background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:26px;">
+          <div style="display:flex; justify-content:space-between; margin-bottom:12px;"><span style="color:var(--text-soft);">Customer</span><strong>${order.customer_name}</strong></div>
+          <div style="border-top:1px solid var(--border); margin:14px 0; padding-top:14px;">
+            ${order.items.map(i => `<div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:.9rem;"><span>${i.product_name} (${i.shape}, ${i.length}, Size ${i.size}) ×${i.quantity}</span><span>Rs. ${(i.price*i.quantity).toLocaleString()}</span></div>`).join('')}
+          </div>
+          <div style="border-top:1px solid var(--border); padding-top:14px; font-size:.9rem;">
+            ${order.discount ? `<div style="display:flex; justify-content:space-between; margin-bottom:6px; color:var(--success);"><span>Discount</span><span>−Rs. ${Number(order.discount).toLocaleString()}</span></div>` : ''}
+            <div style="display:flex; justify-content:space-between; margin-bottom:6px;"><span>Delivery Charges</span><span>Rs. ${Number(order.delivery_charge||0).toLocaleString()}</span></div>
+          </div>
+          <div style="border-top:1px solid var(--border); padding-top:14px; display:flex; justify-content:space-between; font-weight:700; font-size:1.1rem;"><span>Total</span><span>Rs. ${Number(order.total).toLocaleString()}</span></div>
+          <div style="border-top:1px solid var(--border); margin-top:14px; padding-top:14px; font-size:.88rem; color:var(--text-soft);">
+            <div style="margin-bottom:8px;"><strong style="color:var(--text);">Delivery Address:</strong> ${order.house_street}, ${order.area}, ${order.city}, ${order.province} ${order.postal_code||''}</div>
+            <div style="margin-bottom:8px;"><strong style="color:var(--text);">Payment Method:</strong> ${order.payment_method}</div>
+            <div><strong style="color:var(--text);">Estimated Delivery:</strong> 4-7 business days</div>
+          </div>
+        </div>
+        <div style="text-align:center; margin-top:26px;"><a href="shop.html" class="btn btn-gold">Continue Shopping</a></div>
+      `;
+    } catch(e){
+      document.getElementById('confirmationContent').innerHTML = '<p class="error-text">Could not find that order.</p>';
+    }
+  })();
+</script>
+</body>
+</html>

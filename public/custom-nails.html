@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Custom Nails — nailedbyayeza</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<div id="site-header"></div>
+<section style="padding-top:130px;">
+  <div class="container" style="max-width:640px;">
+    <div class="section-head"><span class="tag">Bring Your Idea to Life</span><h2>Request a Custom Set</h2><p>Tell us your vision — color, shape, length, and any inspiration photos — and we'll get back to you with a quote.</p></div>
+    <form id="customForm" enctype="multipart/form-data">
+      <div class="form-grid-2">
+        <div class="form-row"><label>Full Name</label><input type="text" id="ccName" required></div>
+        <div class="form-row"><label>Phone Number</label><input type="tel" id="ccPhone" required></div>
+      </div>
+      <div class="form-row"><label>Email (optional)</label><input type="email" id="ccEmail"></div>
+      <div class="form-grid-2">
+        <div class="form-row"><label>Preferred Color</label><input type="text" id="ccColor" placeholder="e.g. Burgundy + Gold"></div>
+        <div class="form-row"><label>Nail Shape</label>
+          <select id="ccShape"><option>Almond</option><option>Coffin</option><option>Oval</option><option>Square</option><option>Stiletto</option></select>
+        </div>
+      </div>
+      <div class="form-row"><label>Nail Length</label>
+        <select id="ccLength"><option>Short</option><option>Medium</option><option>Long</option></select>
+      </div>
+      <div class="form-row"><label>Describe Your Idea</label><textarea id="ccDescription" rows="4" placeholder="Something similar to..."></textarea></div>
+      <div class="form-row"><label>Inspiration Image (optional)</label><input type="file" id="ccImage" accept="image/*"></div>
+      <button type="submit" class="btn btn-gold">Submit Request</button>
+      <div id="customMsg" style="font-size:.85rem; margin-top:12px;"></div>
+    </form>
+  </div>
+</section>
+<div id="site-footer"></div>
+<script src="assets/js/api.js"></script>
+<script src="assets/js/cart.js"></script>
+<script src="assets/js/components.js"></script>
+<script>
+  document.getElementById('customForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const msg = document.getElementById('customMsg');
+    const fd = new FormData();
+    fd.append('customer_name', ccName.value); fd.append('phone', ccPhone.value); fd.append('email', ccEmail.value);
+    fd.append('color', ccColor.value); fd.append('shape', ccShape.value); fd.append('length', ccLength.value);
+    fd.append('description', ccDescription.value);
+    if (ccImage.files[0]) fd.append('inspiration_image', ccImage.files[0]);
+    try {
+      const res = await apiPost('/custom-orders', fd, true);
+      msg.textContent = `Request #${res.request_number} submitted! We'll be in touch soon.`; msg.style.color='var(--success)';
+      e.target.reset();
+    } catch(err){ msg.textContent = err.message; msg.style.color='var(--danger)'; }
+  });
+</script>
+</body>
+</html>

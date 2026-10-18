@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Contact — nailedbyayeza</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<div id="site-header"></div>
+<section style="padding-top:130px;">
+  <div class="container">
+    <div class="section-head"><span class="tag">Get In Touch</span><h2>Contact Us</h2></div>
+    <div class="product-detail">
+      <form id="contactForm">
+        <div class="form-grid-2">
+          <div class="form-row"><label>Name</label><input type="text" id="cName" required></div>
+          <div class="form-row"><label>Email</label><input type="email" id="cEmail" required></div>
+        </div>
+        <div class="form-grid-2">
+          <div class="form-row"><label>Phone</label><input type="tel" id="cPhone"></div>
+          <div class="form-row"><label>Subject</label><input type="text" id="cSubject"></div>
+        </div>
+        <div class="form-row"><label>Message</label><textarea id="cMessage" rows="5" required></textarea></div>
+        <button type="submit" class="btn btn-gold">Send Message</button>
+        <div id="contactMsg" style="font-size:.85rem; margin-top:12px;"></div>
+      </form>
+      <div>
+        <div class="feature-card" style="text-align:left;">
+          <h4 style="margin-bottom:14px;">Reach Us Directly</h4>
+
+          <p style="margin-bottom:10px; display:flex; align-items:center; gap:10px;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#E8447C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;flex-shrink:0;"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+            <span>nailedbyayeza@gmail.com</span>
+          </p>
+
+          <p style="margin-bottom:10px; display:flex; align-items:center; gap:10px;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#E8447C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;flex-shrink:0;"><path d="M2.5 17a24.12 24.12 0 0 1 0-10 2 2 0 0 1 1.4-1.4 49.56 49.56 0 0 1 16.2 0A2 2 0 0 1 21.5 7a24.12 24.12 0 0 1 0 10 2 2 0 0 1-1.4 1.4 49.55 49.55 0 0 1-16.2 0A2 2 0 0 1 2.5 17"/><path d="m10 15 5-3-5-3z"/></svg>
+            <span>Youtube: <a href="https://www.youtube.com/@NailedbyAyeza" target="_blank" rel="noopener" style="color:var(--pink-deep);">@NailedbyAyeza</a></span>
+          </p>
+
+          <p style="margin-bottom:10px; display:flex; align-items:center; gap:10px;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#E8447C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;flex-shrink:0;"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/></svg>
+            <span><a href="https://instagram.com/nailed.by.ayeza" target="_blank" rel="noopener" style="color:var(--pink-deep);">@nailed.by.ayeza</a></span>
+          </p>
+
+          <p style="margin-bottom:10px; display:flex; align-items:center; gap:10px;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#E8447C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;flex-shrink:0;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <span>Business Hours: Mon–Sat, 11 AM – 8 PM</span>
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+<div id="site-footer"></div>
+<script src="assets/js/api.js"></script>
+<script src="assets/js/cart.js"></script>
+<script src="assets/js/components.js"></script>
+<script>
+  document.getElementById('contactForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const msg = document.getElementById('contactMsg');
+    try {
+      await apiPost('/contact', { name: cName.value, email: cEmail.value, phone: cPhone.value, subject: cSubject.value, message: cMessage.value });
+      msg.textContent = 'Message sent — we\'ll get back to you soon!'; msg.style.color='var(--success)';
+      e.target.reset();
+    } catch(err){ msg.textContent = err.message; msg.style.color='var(--danger)'; }
+  });
+</script>
+</body>
+</html>
