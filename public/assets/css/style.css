@@ -344,3 +344,12 @@ header .nav-row{
   }
   .f-icon{ width:16px; height:16px; stroke:var(--pink); fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; vertical-align:-3px; margin-right:8px; }
 }
+/* Long words / text must never stretch the page on mobile */
+html, body{ max-width:100%; overflow-x:hidden; }
+.grid > *{ min-width:0; }
+.review-card, .review-card p{
+  min-width:0;
+  max-width:100%;
+  overflow-wrap:anywhere;
+  word-break:break-word;
+}

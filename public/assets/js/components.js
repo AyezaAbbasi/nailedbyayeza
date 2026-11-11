@@ -97,8 +97,8 @@ function renderFooter(){
             <li><a href="contact.html">Contact Us</a></li>
           </ul></div>
           <div><h4>Connect</h4><ul>
-            <li><a href="https://instagram.com/nailedbyayeza" target="_blank">Instagram</a></li>
-            <li><a href="mailto:hello@nailedbyayeza.com">hello@nailedbyayeza.com</a></li>
+            <li><a href="https://instagram.com/nailed.by.ayeza" target="_blank">Instagram</a></li>
+            <li><a href="mailto:nailedbyayeza@gmail.com">nailedbyayeza@gmail.com</a></li>
           </ul></div>
         </div>
         <div class="footer-bottom">© 2026 nailedbyayeza. All designs handmade with love.</div>
