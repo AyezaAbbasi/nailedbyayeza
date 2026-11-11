@@ -651,18 +651,68 @@ async function updateOrderStatus(id){
 }
 
 // ---------- Custom Orders ----------
+let customOrdersCache = [];
 async function loadCustomOrders(){
   const requests = await apiGet('/custom-orders');
+  customOrdersCache = requests;
   customOrdersBody.innerHTML = requests.map(r => `
-    <tr><td>#C${String(r.request_number).padStart(3,'0')}</td><td>${r.customer_name}<br><span style="color:var(--text-faint); font-size:.78rem;">${r.phone}</span></td>
-    <td style="font-size:.82rem;">${r.color||''}, ${r.shape||''}, ${r.length||''}</td>
+    <tr><td>#C${String(r.request_number).padStart(3,'0')}</td><td>${esc(r.customer_name)}<br><span style="color:var(--text-faint); font-size:.78rem;">${esc(r.phone)}${r.email ? '<br>' + esc(r.email) : ''}</span></td>
+    <td style="font-size:.82rem;">${esc(r.color||'')}, ${esc(r.shape||'')}, ${esc(r.length||'')}</td>
     <td>${r.inspiration_image ? `<a href="${imgUrl(r.inspiration_image)}" target="_blank"><i data-lucide="image"></i>View</a>` : '—'}</td>
     <td><span class="badge ${r.status.toLowerCase()}">${r.status}</span></td>
-    <td>${r.status==='New' ? `<button class="btn btn-sm" onclick="setCustomStatus('${r.id}','Accepted')">Accept</button> <button class="btn btn-sm btn-danger" onclick="setCustomStatus('${r.id}','Rejected')">Reject</button>` : ''}</td>
+    <td style="white-space:nowrap;">${r.status==='New'
+      ? `<button class="btn btn-sm" onclick="openDecision('${r.id}','Accepted')">Accept</button> <button class="btn btn-sm btn-danger" onclick="openDecision('${r.id}','Rejected')">Reject</button>`
+      : `<button class="btn btn-sm btn-outline" onclick="openDecision('${r.id}','${r.status}')">Email customer</button>`}</td>
     </tr>`).join('') || '<tr><td colspan="6" class="empty-note">No custom requests yet.</td></tr>';
   refreshIcons();
 }
-async function setCustomStatus(id, status){ await apiSend(`/custom-orders/${id}`,'PUT',{status}); loadCustomOrders(); }
+function defaultDecisionText(r, status){
+  const first = (r.customer_name || '').split(' ')[0] || 'there';
+  const ref = '#C' + String(r.request_number).padStart(3,'0');
+  return status === 'Accepted'
+    ? `Hi ${first},\n\nThank you for your custom order request ${ref}! Good news — we have accepted it and will start working on your set.\n\nWe will contact you on ${r.phone} to confirm the final price and delivery time. If you have any questions, just reply to this email.\n\nThank you for choosing nailedbyayeza!`
+    : `Hi ${first},\n\nThank you for your custom order request ${ref}. Unfortunately we are not able to take this one on right now.\n\nYou are welcome to send another request or pick from our ready-made designs. If you have any questions, just reply to this email.\n\nThank you for understanding,\nnailedbyayeza`;
+}
+function openDecision(id, status){
+  const r = customOrdersCache.find(x => x.id === id);
+  if (!r) return;
+  const hasEmail = !!r.email;
+  const text = r.decision_message && r.status === status ? r.decision_message : defaultDecisionText(r, status);
+  msgModalContent.innerHTML = `
+    <h3 style="margin-bottom:14px;">Custom order #C${String(r.request_number).padStart(3,'0')} — ${r.status === 'New' ? (status === 'Accepted' ? 'Accept' : 'Reject') : 'Email customer'}</h3>
+    <p style="font-size:.85rem;"><b>Customer:</b> ${esc(r.customer_name)} &nbsp; <b>Phone:</b> ${esc(r.phone)}</p>
+    <p style="font-size:.85rem;"><b>Email:</b> ${hasEmail ? esc(r.email) : '<span style="color:var(--danger)">not provided</span>'}</p>
+    <p style="font-size:.85rem;"><b>Request:</b> ${esc(r.color||'—')}, ${esc(r.shape||'—')}, ${esc(r.length||'—')}</p>
+    ${r.description ? `<div style="background:var(--cream); border-radius:8px; padding:12px; margin:10px 0; font-size:.85rem; white-space:pre-wrap;">${esc(r.description)}</div>` : ''}
+    ${r.status !== 'New' ? `<div class="form-row"><label>Decision</label>
+      <select id="decisionStatus" onchange="document.getElementById('decisionText').value = defaultDecisionText(customOrdersCache.find(x=>x.id==='${r.id}'), this.value)">
+        <option value="Accepted" ${status==='Accepted'?'selected':''}>Accepted</option><option value="Rejected" ${status==='Rejected'?'selected':''}>Rejected</option></select></div>` : `<input type="hidden" id="decisionStatus" value="${status}">`}
+    ${hasEmail
+      ? `<div class="form-row"><label>Email to customer (you can edit this)</label><textarea id="decisionText" rows="9">${esc(text)}</textarea></div>`
+      : `<p style="font-size:.82rem; color:var(--danger); margin:10px 0;">This customer left no email, so only the status can be changed. Contact them on ${esc(r.phone)}.</p><input type="hidden" id="decisionText" value="">`}
+    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+      <button class="btn" id="decisionBtn" onclick="submitDecision('${r.id}')">${hasEmail ? 'SEND EMAIL &amp; SAVE' : 'SAVE STATUS'}</button>
+      <button class="btn btn-outline" onclick="msgModal.classList.remove('open')">Cancel</button>
+    </div>
+    <div id="decisionStatusMsg" style="font-size:.85rem; margin-top:10px;"></div>`;
+  msgModal.classList.add('open');
+}
+async function submitDecision(id){
+  const status = document.getElementById('decisionStatus').value;
+  const message = document.getElementById('decisionText').value.trim();
+  const out = document.getElementById('decisionStatusMsg');
+  const btn = document.getElementById('decisionBtn');
+  btn.disabled = true; const label = btn.innerHTML; btn.textContent = 'Sending…';
+  try {
+    const d = await apiSend(`/custom-orders/${id}`, 'PUT', { status, message });
+    out.textContent = d.emailed ? 'Email sent to the customer!' : 'Status saved.'; out.style.color = 'var(--success)';
+    await loadCustomOrders();
+    setTimeout(() => msgModal.classList.remove('open'), 900);
+  } catch(err){
+    out.textContent = err.message; out.style.color = 'var(--danger)';
+    btn.disabled = false; btn.innerHTML = label;
+  }
+}
 
 // ---------- Customers ----------
 async function loadCustomers(){

@@ -2,7 +2,7 @@ const express = require('express');
 const CustomOrder = require('../models/CustomOrder');
 const requireAdmin = require('../middleware/requireAdmin');
 const makeUploader = require('../middleware/upload');
-const { sendCustomOrderEmail } = require('../utils/mailer');
+const { sendCustomOrderEmail, sendCustomOrderDecision } = require('../utils/mailer');
 
 const router = express.Router();
 const upload = makeUploader('custom', 5);
@@ -39,10 +39,28 @@ router.get('/', requireAdmin, async (req, res) => {
   res.json(requests);
 });
 
-// PUT /api/custom-orders/:id  { status } -> Accept/Reject (admin)
+// PUT /api/custom-orders/:id  { status, message? } -> Accept/Reject (admin)
+// If "message" is given, it is emailed to the customer along with the decision.
 router.put('/:id', requireAdmin, async (req, res) => {
-  await CustomOrder.findByIdAndUpdate(req.params.id, { status: req.body.status });
-  res.json({ success: true });
+  const { status, message } = req.body;
+  if (!['New', 'Accepted', 'Rejected'].includes(status)) return res.status(400).json({ error: 'Invalid status' });
+  const request = await CustomOrder.findById(req.params.id);
+  if (!request) return res.status(404).json({ error: 'Request not found' });
+
+  const text = (message || '').trim();
+  if (text) {
+    try {
+      await sendCustomOrderDecision(request, status, text);
+    } catch (err) {
+      // Email failed -> do NOT change the status, so the admin can fix and retry.
+      return res.status(500).json({ error: 'Email not sent: ' + err.message });
+    }
+    request.decision_message = text;
+    request.decided_at = new Date();
+  }
+  request.status = status;
+  await request.save();
+  res.json({ success: true, emailed: !!text });
 });
 
 module.exports = router;

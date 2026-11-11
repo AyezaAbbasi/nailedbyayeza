@@ -11,6 +11,8 @@ const customOrderSchema = new mongoose.Schema({
   description: String,
   inspiration_image: { type: String, default: null },
   status: { type: String, enum: ['New', 'Accepted', 'Rejected'], default: 'New' },
+  decision_message: { type: String, default: '' },
+  decided_at: { type: Date, default: null },
   created_at: { type: Date, default: Date.now }
 });
 

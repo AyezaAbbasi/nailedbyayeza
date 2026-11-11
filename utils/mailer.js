@@ -145,4 +145,27 @@ async function sendContactReply(msg, replyText) {
   });
 }
 
-module.exports = { sendOrderEmail, sendCustomOrderEmail, sendContactNotification, sendContactReply };
+// Emails the customer the owner's decision (Accepted / Rejected) on a custom order request.
+// Throws on failure so the admin panel can show the error.
+async function sendCustomOrderDecision(request, status, messageText) {
+  if (!transporter) throw new Error('Email is not configured on the server (EMAIL_USER / EMAIL_PASS missing)');
+  if (!request.email) throw new Error('This customer did not leave an email address');
+  const ref = '#C' + String(request.request_number).padStart(3, '0');
+  const accepted = status === 'Accepted';
+  await transporter.sendMail({
+    from: `"nailedbyayeza" <${process.env.EMAIL_USER}>`,
+    to: request.email,
+    replyTo: process.env.EMAIL_TO || process.env.EMAIL_USER,
+    subject: `Your custom order request ${ref} has been ${accepted ? 'accepted' : 'declined'}`,
+    html: `
+      <h2 style="color:${accepted ? '#2e7d32' : '#b23a48'};">Custom order ${ref} — ${accepted ? 'Accepted' : 'Declined'}</h2>
+      <p style="white-space:pre-wrap;">${esc(messageText)}</p>
+      <hr style="border:none;border-top:1px solid #ddd;margin:20px 0;">
+      <p style="color:#888;font-size:13px;"><b>Your request:</b><br>
+        Color: ${esc(request.color || '—')} &nbsp; Shape: ${esc(request.shape || '—')} &nbsp; Length: ${esc(request.length || '—')}<br>
+        ${esc(request.description || '')}</p>
+      <p style="color:#888;font-size:13px;">— nailedbyayeza</p>`
+  });
+}
+
+module.exports = { sendOrderEmail, sendCustomOrderEmail, sendCustomOrderDecision, sendContactNotification, sendContactReply };
