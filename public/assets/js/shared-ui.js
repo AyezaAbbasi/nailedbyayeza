@@ -1,5 +1,32 @@
 // Reusable rendering helpers shared across shop.html, product.html, index.html
 
+// Phone photos are often 3-10 MB, which is over the upload limits (and over Vercel's ~4.5 MB request cap).
+// This shrinks an image in the browser before upload: max 1600px on the longest side, JPEG quality 0.82.
+// Returns the original file untouched if it is already small or can't be processed.
+async function compressImage(file, maxDim = 1600, quality = 0.82){
+  try {
+    if (!file || !/^image\//.test(file.type) || /gif$/.test(file.type)) return file;
+    if (file.size < 400 * 1024) return file;
+    let bmp;
+    if (window.createImageBitmap){
+      try { bmp = await createImageBitmap(file, { imageOrientation: 'from-image' }); } catch(e){ bmp = null; }
+    }
+    if (!bmp){
+      bmp = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = URL.createObjectURL(file); });
+    }
+    const w0 = bmp.width, h0 = bmp.height;
+    const scale = Math.min(1, maxDim / Math.max(w0, h0));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.round(w0 * scale); canvas.height = Math.round(h0 * scale);
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(bmp, 0, 0, canvas.width, canvas.height);
+    const blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', quality));
+    if (!blob || blob.size >= file.size) return file;
+    return new File([blob], file.name.replace(/\.[^.]+$/, '') + '.jpg', { type: 'image/jpeg' });
+  } catch(e){ return file; }
+}
+
 // Images now live on Cloudinary (full https:// URL). Old products saved before the
 // switch still have a local "uploads/..." path, so this keeps both working.
 function imgUrl(p){

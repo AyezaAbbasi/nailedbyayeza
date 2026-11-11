@@ -41,7 +41,7 @@
         <div style="background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:20px; margin-bottom:20px;">
           <p style="font-size:.85rem; color:var(--text-soft); margin-bottom:12px;">
             Hold a coin flat against the tip of your middle finger and take a photo from directly above, showing your nail bed and the coin side by side.
-            This helps us confirm your exact size. (Optional but recommended — max 2MB.)
+            This helps us confirm your exact size. (Optional but recommended — large photos are resized automatically.)
           </p>
           <input type="file" id="sizingPhoto" accept="image/*">
           <div id="sizingPhotoMsg" style="font-size:.8rem; margin-top:8px; color:var(--text-faint);"></div>
@@ -92,6 +92,17 @@
   let selectedPaymentMethod = 'Cash on Delivery';
   let appliedDiscountPercent = 0;
   let deliveryCharge = 250; // overwritten with the admin's configured value once /homepage loads
+  let defaultDeliveryCharge = 250;
+  let deliveryRates = [];
+
+  // city match wins over province match, otherwise the default charge — same rule the server uses
+  function calcDeliveryCharge(){
+    const norm = s => String(s||'').trim().toLowerCase();
+    const city = norm(document.getElementById('city').value);
+    const province = norm(document.getElementById('province').value);
+    const match = deliveryRates.find(r => norm(r.location) === city) || deliveryRates.find(r => norm(r.location) === province);
+    return match ? Number(match.charge) : defaultDeliveryCharge;
+  }
 
   function selectPayment(el){
     document.querySelectorAll('#paymentOptions .option-chip').forEach(c => c.classList.remove('selected'));
@@ -105,6 +116,7 @@
         <span>${i.product_name} <span style="color:var(--text-faint);">×${i.quantity}</span></span>
         <span>Rs. ${(i.price*i.quantity).toLocaleString()}</span>
       </div>`).join('') || '<p class="loading-text" style="padding:10px 0;">Your bag is empty.</p>';
+    deliveryCharge = calcDeliveryCharge();
     const subtotal = cartTotal();
     const discount = Math.round(subtotal * (appliedDiscountPercent/100));
     document.getElementById('sumSubtotal').textContent = `Rs. ${subtotal.toLocaleString()}`;
@@ -116,10 +128,13 @@
   async function loadDeliveryCharge(){
     try {
       const hp = await apiGet('/homepage');
-      if (hp.delivery_charge !== undefined) deliveryCharge = hp.delivery_charge;
+      if (hp.delivery_charge !== undefined) defaultDeliveryCharge = hp.delivery_charge;
+      deliveryRates = hp.delivery_rates || [];
     } catch(e){}
     renderSummary();
   }
+  document.getElementById('city').addEventListener('input', renderSummary);
+  document.getElementById('province').addEventListener('change', renderSummary);
 
   async function applyCoupon(){
     const code = document.getElementById('couponInput').value.trim();
@@ -136,8 +151,8 @@
   document.getElementById('sizingPhoto').addEventListener('change', (e) => {
     const file = e.target.files[0];
     const msgEl = document.getElementById('sizingPhotoMsg');
-    if (file && file.size > 2*1024*1024){
-      msgEl.textContent = 'File too large — please choose an image under 2MB.'; msgEl.style.color='var(--danger)';
+    if (file && !file.type.startsWith('image/')){
+      msgEl.textContent = 'Please choose an image file (JPG, PNG or WEBP).'; msgEl.style.color='var(--danger)';
       e.target.value = '';
     } else if (file){ msgEl.textContent = `Selected: ${file.name}`; msgEl.style.color='var(--text-faint)'; }
   });
@@ -183,8 +198,13 @@
     fd.append('items', JSON.stringify(cart));
     const coupon = document.getElementById('couponInput').value.trim();
     if (coupon) fd.append('coupon_code', coupon);
-    const photo = document.getElementById('sizingPhoto').files[0];
-    if (photo) fd.append('sizing_photo', photo);
+    const rawPhoto = document.getElementById('sizingPhoto').files[0];
+    if (rawPhoto){
+      msgEl.textContent = 'Preparing your photo…'; msgEl.style.color='var(--text-faint)';
+      const photo = await compressImage(rawPhoto);
+      fd.append('sizing_photo', photo, photo.name);
+      msgEl.textContent = '';
+    }
 
     try {
       const res = await apiPost('/orders', fd, true);

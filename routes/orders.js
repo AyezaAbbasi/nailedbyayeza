@@ -8,7 +8,7 @@ const { sendOrderEmail } = require('../utils/mailer');
 const makeUploader = require('../middleware/upload');
 
 const router = express.Router();
-const upload = makeUploader('sizing', 2); // coin-method sizing photo, max 2MB
+const upload = makeUploader('sizing', 4); // coin-method sizing photo; browser shrinks it first, 4MB stays under Vercel's ~4.5MB request cap
 
 async function nextOrderNumber() {
   const last = await Order.findOne().sort({ order_number: -1 });

@@ -179,8 +179,8 @@
       fd.append('rating', selectedRating);
       fd.append('comment', document.getElementById('revComment').value);
       fd.append('product_id', productId);
-      const photo = document.getElementById('revImage').files[0];
-      if (photo) fd.append('image', photo);
+      const rawPhoto = document.getElementById('revImage').files[0];
+      if (rawPhoto){ const photo = await compressImage(rawPhoto); fd.append('image', photo, photo.name); }
       await apiPost('/reviews', fd, true);
       msg.textContent='Thanks for your review!'; msg.style.color='var(--success)';
       e.target.reset(); selectedRating=0;
